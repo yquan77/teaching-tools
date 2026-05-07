@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语文课文大PK - 擂台赛版</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 和 ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- 引入 Babel 用于解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans SC', sans-serif; }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+        .animate-popIn { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .animate-bounce-slow { animation: bounce 2s infinite; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        /* 防止双击选中文本 */
+        .no-select { user-select: none; -webkit-user-select: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white h-screen overflow-hidden">
+    <div id="root" class="h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useRef, Fragment } = React;
+
+        // --- 图标组件 (Inline SVG) ---
+        const Swords = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" /><line x1="13" y1="19" x2="19" y2="13" /><line x1="16" y1="16" x2="20" y2="20" /><line x1="19" y1="21" x2="21" y2="19" /><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5" /><line x1="5" y1="14" x2="9" y2="18" /><line x1="7" y1="17" x2="4" y2="20" /><line x1="3" y1="19" x2="5" y2="21" /></svg>
+        );
+        const Trophy = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
+        );
+        const RefreshCw = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg>
+        );
+        const BookOpen = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>
+        );
+        const XCircle = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg>
+        );
+        const UserPlus = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        );
+        const Play = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="5 3 19 12 5 21 5 3" /></svg>
+        );
+
+        // --- 数据与常量 ---
+        
+        // 扩充后的完整题库 (覆盖所有课文)
+        const RAW_QUESTIONS = [
+          { t: "我看着摊在眼前的字母，仿佛看见千千万万只横行的______。", a: "螃蟹", o: ["螃蟹", "蜘蛛", "蚂蚁"] },
+          { t: "一只不识相的蚊子飞过来叮的一声，手臂上留下一个______。", a: "手印", o: ["手印", "伤口", "水泡"] },
+          { t: "血红血红的掌印，像极了成绩册里英文科的______。", a: "分数", o: ["分数", "名字", "评语"] },
+          { t: "这是一本生动的画册，述说着李光前先生的______。", a: "奋斗史", o: ["奋斗史", "家族史", "旅行记"] },
+          { t: "李光前在10岁那年跟着父亲搬迁到______谋生。", a: "新加坡", o: ["新加坡", "马来西亚", "中国"] },
+          { t: "周末时，李光前坚持学习中文，立志长大后要干一番______。", a: "大事业", o: ["大事业", "苦差事", "农活"] },
+          { t: "19岁那年，他白天教书，晚上为______翻译电讯稿。", a: "华文报", o: ["华文报", "英文报", "电台"] },
+          { t: "我英文不好，并不是我天资不好，而是我______不足。", a: "毅力", o: ["毅力", "体力", "睡眠"] },
+          { t: "古往今来，“世上无难事，只怕______”。", a: "有心人", o: ["有心人", "聪明人", "有钱人"] },
+          { t: "乡村四月闲人少，才了蚕桑又______。", a: "插田", o: ["插田", "种豆", "采茶"] },
+          { t: "我打从四岁半开始学下象棋，得到爸爸的______。", a: "真传", o: ["真传", "秘籍", "棋盘"] },
+          { t: "我布局慎密，攻守兼备，屡战屡胜，仿佛是象棋界的______。", a: "诸葛亮", o: ["诸葛亮", "刘备", "曹操"] },
+          { t: "决赛第一局，小蟋蟀以炮攻马，把我逼入______。", a: "死角", o: ["死角", "绝境", "陷阱"] },
+          { t: "当时，我的心情就像从______掉入谷底般难受。", a: "山崖", o: ["山崖", "云端", "高楼"] },
+          { t: "项羽是个大将军，可就是瞧不起另一个比自己弱的人—______。", a: "刘邦", o: ["刘邦", "韩信", "萧何"] },
+          { t: "“胜不骄，败不馁”要以______看待得失。", a: "平常心", o: ["平常心", "自信心", "好胜心"] },
+          { t: "心里没来由的______，别说思考，就连提笔也没劲儿。", a: "沉重", o: ["沉重", "开心", "激动"] },
+          { t: "我拿起电蚊拍，扑上扑下地追打______。", a: "蚊子", o: ["蚊子", "苍蝇", "蟑螂"] },
+          { t: "一群穷孩子很快打成一片，他用______和淡米尔语沟通。", a: "英语", o: ["英语", "华语", "马来语"] },
+          { t: "他过着左手打蚊子，右手______的日子。", a: "写稿", o: ["写稿", "吃饭", "画画"] },
+          { t: "打蚊子所留下的血红巴掌印，让我明了遇到挫折时不要______。", a: "逃避", o: ["逃避", "面对", "挑战"] },
+          { t: "绿遍山原白满川，子规声里______。", a: "雨如烟", o: ["雨如烟", "风如画", "水如镜"] },
+          { t: "我是您《三语周报》专栏的______读者。", a: "忠实", o: ["忠实", "普通", "偶尔"] },
+          { t: "今年升上四年级，我更是______，被委派参加比赛。", a: "锋芒毕露", o: ["锋芒毕露", "默默无闻", "胆小如鼠"] },
+          { t: "决赛当天，我______，视这场比赛为再世棋王与小蟋蟀的对决。", a: "趾高气扬", o: ["趾高气扬", "垂头丧气", "小心翼翼"] },
+          { t: "我的对手是一名身高不及______的男孩。", a: "一米三", o: ["一米三", "一米五", "一米六"] },
+          { t: "每当看见他们口沫横飞地高谈阔论，我就会心生______。", a: "妒忌", o: ["妒忌", "羡慕", "欢喜"] },
+          { t: "项羽脾气______，自封“西楚霸王”。", a: "暴躁", o: ["暴躁", "温和", "冷静"] },
+          { t: "输掉比赛后却从诸葛亮变成躲事的______。", a: "鸵鸟", o: ["鸵鸟", "狮子", "老鹰"] },
+          { t: "胜利的话不忘______，失败的话那也是一种积累经验。", a: "谦虚", o: ["谦虚", "骄傲", "自大"] }
+        ];
+
+        // 洗牌算法
+        const shuffle = (array) => {
+          return [...array].sort(() => Math.random() - 0.5);
+        };
+
+        // 头像生成URL
+        const getAvatarUrl = (id) => `https://api.dicebear.com/7.x/adventurer/svg?seed=${id}&backgroundColor=b6e3f4`;
+
+        // --- 主组件 ---
+        function ChineseLessonPK() {
+          const [gameState, setGameState] = useState('menu'); // menu, playing, end
+          const [roundStatus, setRoundStatus] = useState('ready'); // ready (waiting for start), active (answering)
+          const [p1, setP1] = useState({ id: 1, score: 0, locked: false });
+          const [p2, setP2] = useState({ id: 2, score: 0, locked: false });
+          const [currentQIndex, setCurrentQIndex] = useState(0);
+          const [currentOptions, setCurrentOptions] = useState([]);
+          const [shuffledQuestions, setShuffledQuestions] = useState([]);
+          const WIN_SCORE = 5;
+
+          // 使用 useRef 存储 ID 池，保证 ID 轮流使用不重复
+          const idPoolRef = useRef([]);
+
+          // 获取下一个不重复的 ID
+          const getNextId = useCallback(() => {
+            if (idPoolRef.current.length === 0) {
+              // 池子空了，重新填充 1-41 并洗牌
+              const newPool = Array.from({ length: 41 }, (_, i) => i + 1);
+              idPoolRef.current = shuffle(newPool);
+              console.log("ID Pool refreshed!");
+            }
+            return idPoolRef.current.pop();
+          }, []);
+
+          // 初始化新游戏 (完全重置)
+          const startGame = () => {
+            // 重置 ID 池并获取两个不同的 ID
+            idPoolRef.current = []; 
+            const p1Id = getNextId();
+            const p2Id = getNextId(); // getNextId 内部逻辑保证不会重复（只要池子逻辑正确）
+
+            setP1({ id: p1Id, score: 0, locked: false });
+            setP2({ id: p2Id, score: 0, locked: false });
+            
+            initQuestions();
+            setRoundStatus('ready'); // 先进入准备状态
+            setGameState('playing');
+          };
+
+          // 擂台模式：保留赢家，替换输家
+          const nextRound = () => {
+            const winner = p1.score >= WIN_SCORE ? 'p1' : 'p2';
+            const newChallengerId = getNextId();
+            
+            if (winner === 'p1') {
+                // P1 赢了：P1 保留（分数重置），P2 换人
+                setP1(prev => ({ ...prev, score: 0, locked: false }));
+                setP2({ id: newChallengerId, score: 0, locked: false });
+            } else {
+                // P2 赢了：P2 保留（分数重置），P1 换人
+                setP2(prev => ({ ...prev, score: 0, locked: false }));
+                setP1({ id: newChallengerId, score: 0, locked: false });
+            }
+
+            initQuestions();
+            setRoundStatus('ready'); // 先进入准备状态
+            setGameState('playing');
+          };
+
+          // 开始本轮答题（从准备状态解除）
+          const startRound = () => {
+             setRoundStatus('active');
+          };
+
+          // 初始化/重置题目
+          const initQuestions = () => {
+            const qList = shuffle(RAW_QUESTIONS);
+            setShuffledQuestions(qList);
+            setCurrentQIndex(0);
+            setCurrentOptions(shuffle(qList[0].o));
+          };
+
+          const handleAnswer = (player, answerIndex) => {
+            if (gameState !== 'playing' || roundStatus !== 'active') return;
+            
+            // 判定当前玩家对象
+            const isP1 = player === 'p1';
+            const currentPlayer = isP1 ? p1 : p2;
+            const currentQ = shuffledQuestions[currentQIndex];
+
+            // 如果被锁定了（答错惩罚中），不处理
+            if (currentPlayer.locked) return;
+
+            const selectedOption = currentOptions[answerIndex];
+            const isCorrect = selectedOption === currentQ.a;
+
+            if (isCorrect) {
+              // 答对：加分，并进入下一题
+              const newScore = currentPlayer.score + 1;
+              
+              if (isP1) setP1({ ...p1, score: newScore });
+              else setP2({ ...p2, score: newScore });
+
+              if (newScore >= WIN_SCORE) {
+                setGameState('end');
+              } else {
+                nextQuestion();
+              }
+            } else {
+              // 答错：锁定该玩家 2秒
+              if (isP1) {
+                setP1(prev => ({ ...prev, locked: true }));
+                setTimeout(() => setP1(prev => ({ ...prev, locked: false })), 2000);
+              } else {
+                setP2(prev => ({ ...prev, locked: true }));
+                setTimeout(() => setP2(prev => ({ ...prev, locked: false })), 2000);
+              }
+            }
+          };
+
+          const nextQuestion = () => {
+            const nextIndex = (currentQIndex + 1) % shuffledQuestions.length;
+            setCurrentQIndex(nextIndex);
+            setCurrentOptions(shuffle(shuffledQuestions[nextIndex].o));
+            
+            // 解锁所有人（新题目开始）
+            setP1(prev => ({ ...prev, locked: false }));
+            setP2(prev => ({ ...prev, locked: false }));
+          };
+
+          // 键盘监听
+          useEffect(() => {
+            const handleKeyDown = (e) => {
+              // 如果不在 playing 状态或不是 active 状态，不允许答题
+              if (gameState !== 'playing' || roundStatus !== 'active') {
+                // 如果是准备状态，回车键可以开始
+                if (gameState === 'playing' && roundStatus === 'ready' && e.key === 'Enter') {
+                    startRound();
+                }
+                return;
+              }
+
+              const key = e.key.toLowerCase();
+              
+              if (key === 'a') handleAnswer('p1', 0);
+              if (key === 's') handleAnswer('p1', 1);
+              if (key === 'd') handleAnswer('p1', 2);
+
+              if (key === 'j') handleAnswer('p2', 0);
+              if (key === 'k') handleAnswer('p2', 1);
+              if (key === 'l') handleAnswer('p2', 2);
+              
+              if (e.key === 'ArrowLeft') handleAnswer('p2', 0);
+              if (e.key === 'ArrowDown') handleAnswer('p2', 1);
+              if (e.key === 'ArrowRight') handleAnswer('p2', 2);
+            };
+
+            window.addEventListener('keydown', handleKeyDown);
+            return () => window.removeEventListener('keydown', handleKeyDown);
+          }, [gameState, roundStatus, currentQIndex, currentOptions, p1.locked, p2.locked]);
+
+          // --- 界面渲染组件 ---
+
+          const MenuScreen = () => (
+            <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-blue-500 to-purple-600 text-white p-8">
+              <BookOpen size={80} className="mb-6 animate-bounce" />
+              <h1 className="text-5xl font-bold mb-4 text-center drop-shadow-lg">语文课文大PK</h1>
+              <p className="text-xl mb-8 opacity-90">双人同屏对战 • 谁是语文小博士？</p>
+              
+              <div className="bg-white/20 backdrop-blur-sm p-6 rounded-xl mb-8 max-w-md w-full">
+                <h3 className="font-bold text-lg mb-2">🎮 游戏规则:</h3>
+                <ul className="list-disc list-inside space-y-2 text-sm">
+                  <li>系统随机抽取两名角色 (ID: 1-41)</li>
+                  <li>抢答得分，答错<span className="text-red-300 font-bold">冻结2秒</span></li>
+                  <li>先答对 <span className="text-yellow-300 font-bold">{WIN_SCORE}</span> 题者获胜</li>
+                  <li><span className="text-green-300 font-bold">擂台制</span>：赢家留下来接受新挑战！</li>
+                </ul>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8 mb-8 w-full max-w-md text-center">
+                <div>
+                  <div className="bg-blue-800/50 p-2 rounded mb-2 font-bold">Player 1 (左)</div>
+                  <div className="text-sm">键盘: A / S / D</div>
+                </div>
+                <div>
+                  <div className="bg-red-800/50 p-2 rounded mb-2 font-bold">Player 2 (右)</div>
+                  <div className="text-sm">键盘: J / K / L <br/>(或 ← ↓ →)</div>
+                </div>
+              </div>
+
+              <button 
+                onClick={startGame}
+                className="group relative px-8 py-4 bg-yellow-400 text-yellow-900 rounded-full font-black text-2xl shadow-[0_8px_0_rgb(180,83,9)] active:shadow-none active:translate-y-2 transition-all cursor-pointer hover:brightness-110"
+              >
+                <span className="flex items-center gap-2">
+                  <Swords size={28} /> 开始对战
+                </span>
+              </button>
+            </div>
+          );
+
+          const WinnerScreen = () => {
+            const winner = p1.score >= WIN_SCORE ? 'p1' : 'p2';
+            const winnerData = winner === 'p1' ? p1 : p2;
+            
+            return (
+              <div className="flex flex-col items-center justify-center h-full bg-gradient-to-t from-yellow-400 to-orange-500 text-white animate-fadeIn">
+                <Trophy size={100} className="text-yellow-100 mb-6 drop-shadow-xl animate-pulse" />
+                <h2 className="text-6xl font-black mb-4 drop-shadow-md">
+                  {winner === 'p1' ? '左侧玩家' : '右侧玩家'} 获胜!
+                </h2>
+                <div className="bg-white/30 p-8 rounded-full mb-8">
+                    <img 
+                        src={getAvatarUrl(winnerData.id)} 
+                        alt="Winner" 
+                        className="w-40 h-40 rounded-full border-4 border-white shadow-xl"
+                    />
+                </div>
+                
+                <div className="flex gap-4">
+                    <button 
+                      onClick={nextRound}
+                      className="flex items-center gap-2 px-8 py-4 bg-green-500 text-white rounded-xl font-bold text-xl shadow-[0_6px_0_rgb(21,128,61)] active:shadow-none active:translate-y-2 transition-all cursor-pointer hover:bg-green-400"
+                    >
+                      <UserPlus /> 下一位挑战者
+                    </button>
+                </div>
+                
+                <button 
+                    onClick={() => setGameState('menu')}
+                    className="mt-6 text-white/80 hover:text-white underline text-sm cursor-pointer"
+                >
+                    返回主菜单 (重置所有人)
+                </button>
+              </div>
+            );
+          };
+
+          const PlayerSide = ({ player, id, score, locked, options, onAnswer, sideKeyMap, isReadyPhase }) => (
+            <div className={`flex-1 flex flex-col relative transition-colors duration-300 ${player === 'p1' ? 'bg-blue-100 border-r-4 border-blue-200' : 'bg-red-100 border-l-4 border-red-200'}`}>
+              {/* 冻结遮罩 */}
+              {locked && (
+                <div className="absolute inset-0 z-20 bg-gray-800/80 flex flex-col items-center justify-center backdrop-blur-sm animate-fadeIn">
+                  <XCircle className="text-red-500 w-20 h-20 mb-2" />
+                  <span className="text-white text-2xl font-bold">答错了! 冻结中...</span>
+                </div>
+              )}
+
+              {/* 头部信息 */}
+              <div className={`p-4 flex items-center gap-4 ${player === 'p1' ? 'flex-row' : 'flex-row-reverse'} bg-white/50`}>
+                <div className="relative">
+                  <img src={getAvatarUrl(id)} alt="avatar" className="w-16 h-16 rounded-full border-2 border-gray-400 bg-white" />
+                  <div className="absolute -bottom-1 -right-1 bg-gray-800 text-white text-xs px-2 py-0.5 rounded-full">ID:{id}</div>
+                </div>
+                <div className="flex-1">
+                  <div className={`text-xl font-bold ${player === 'p1' ? 'text-blue-800' : 'text-red-800'} ${player === 'p2' && 'text-right'}`}>
+                    {player === 'p1' ? 'PLAYER 1' : 'PLAYER 2'}
+                  </div>
+                  <div className={`flex gap-1 ${player === 'p2' && 'justify-end'}`}>
+                    {Array.from({ length: WIN_SCORE }).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className={`w-6 h-6 rounded-full border-2 transition-all ${
+                          i < score 
+                            ? (player === 'p1' ? 'bg-blue-500 border-blue-600 scale-110' : 'bg-red-500 border-red-600 scale-110') 
+                            : 'bg-gray-200 border-gray-300'
+                        }`} 
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 题目区域 */}
+              <div className="flex-1 flex flex-col justify-center p-6">
+                <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 min-h-[160px] flex items-center justify-center animate-popIn">
+                    <h3 className="text-xl md:text-2xl font-medium text-gray-800 leading-relaxed text-center">
+                        {isReadyPhase ? (
+                            <span className="text-gray-400 text-4xl font-black tracking-widest">???</span>
+                        ) : (
+                            shuffledQuestions[currentQIndex]?.t.split('______').map((part, i, arr) => (
+                                <Fragment key={i}>
+                                    {part}
+                                    {i < arr.length - 1 && <span className="inline-block w-20 border-b-4 border-gray-800 mx-1"></span>}
+                                </Fragment>
+                            ))
+                        )}
+                    </h3>
+                </div>
+
+                {/* 选项按钮 */}
+                <div className="grid grid-cols-1 gap-4">
+                  {options.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => onAnswer(player, idx)}
+                      disabled={locked || isReadyPhase}
+                      className={`
+                        relative p-4 rounded-xl text-lg font-bold transition-all transform active:scale-95 text-left border-b-4
+                        flex items-center justify-between group
+                        ${player === 'p1' 
+                          ? 'bg-white text-blue-700 hover:bg-blue-50 border-blue-200' 
+                          : 'bg-white text-red-700 hover:bg-red-50 border-red-200'}
+                        ${(locked || isReadyPhase) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                      `}
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className={`
+                            w-8 h-8 flex items-center justify-center rounded-lg text-sm
+                            ${player === 'p1' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}
+                        `}>
+                            {sideKeyMap[idx]}
+                        </span>
+                        {isReadyPhase ? '???' : opt}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+
+          return (
+            <div className="h-full w-full bg-gray-900 no-select">
+              {gameState === 'menu' && <MenuScreen />}
+              
+              {gameState === 'playing' && (
+                <div className="flex h-full w-full relative">
+                    {/* 准备阶段的覆盖层按钮 */}
+                    {roundStatus === 'ready' && (
+                        <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center gap-10 animate-fadeIn">
+                             
+                             {/* 对战双方大屏幕展示 */}
+                             <div className="flex items-center gap-4 md:gap-12">
+                                {/* P1 展示 */}
+                                <div className="flex flex-col items-center transform transition-all hover:scale-110 duration-300">
+                                    <div className="text-blue-400 font-bold text-xl mb-2 tracking-widest">PLAYER 1</div>
+                                    <div className="relative">
+                                        <img src={getAvatarUrl(p1.id)} className="w-28 h-28 rounded-full border-4 border-blue-500 bg-white shadow-[0_0_30px_rgba(59,130,246,0.6)]" />
+                                        <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-1 rounded-full font-black text-3xl border-4 border-gray-900 shadow-lg whitespace-nowrap">
+                                            {p1.id} <span className="text-sm font-normal opacity-80">号</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="text-6xl font-black italic text-white/20 select-none">VS</div>
+
+                                {/* P2 展示 */}
+                                <div className="flex flex-col items-center transform transition-all hover:scale-110 duration-300">
+                                    <div className="text-red-400 font-bold text-xl mb-2 tracking-widest">PLAYER 2</div>
+                                    <div className="relative">
+                                        <img src={getAvatarUrl(p2.id)} className="w-28 h-28 rounded-full border-4 border-red-500 bg-white shadow-[0_0_30px_rgba(239,68,68,0.6)]" />
+                                        <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-1 rounded-full font-black text-3xl border-4 border-gray-900 shadow-lg whitespace-nowrap">
+                                            {p2.id} <span className="text-sm font-normal opacity-80">号</span>
+                                        </div>
+                                    </div>
+                                </div>
+                             </div>
+
+                             <button 
+                                onClick={startRound}
+                                className="group relative px-12 py-6 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-2xl font-black text-4xl shadow-[0_0_40px_rgba(234,88,12,0.4)] active:scale-95 transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(234,88,12,0.6)] cursor-pointer border-4 border-white/20 mt-4"
+                              >
+                                <span className="flex items-center gap-4 drop-shadow-md">
+                                  <Play size={40} fill="currentColor" /> 开始出题
+                                </span>
+                                <div className="absolute -bottom-10 w-full text-center text-base text-white/50 font-normal animate-pulse">点击或按回车键开始</div>
+                              </button>
+                        </div>
+                    )}
+
+                    {/* 中间分割线 */}
+                    <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gray-800 z-10 -ml-0.5 flex flex-col items-center justify-center">
+                        <div className="bg-gray-800 text-white rounded-full p-2 mt-4 font-bold border-2 border-white/20">VS</div>
+                    </div>
+
+                    <PlayerSide 
+                        player="p1" 
+                        id={p1.id}
+                        score={p1.score}
+                        locked={p1.locked}
+                        options={currentOptions}
+                        onAnswer={handleAnswer}
+                        sideKeyMap={['A', 'S', 'D']}
+                        isReadyPhase={roundStatus === 'ready'}
+                    />
+                    <PlayerSide 
+                        player="p2" 
+                        id={p2.id}
+                        score={p2.score}
+                        locked={p2.locked}
+                        options={currentOptions}
+                        onAnswer={handleAnswer}
+                        sideKeyMap={['J', 'K', 'L']}
+                        isReadyPhase={roundStatus === 'ready'}
+                    />
+                </div>
+              )}
+
+              {gameState === 'end' && <WinnerScreen />}
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ChineseLessonPK />);
+    </script>
+</body>
+</html>

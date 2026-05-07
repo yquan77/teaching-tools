@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恳亲会摊位筹备报告 | Infographic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f8fafc; /* Slate 50 */
+            color: #1e293b; /* Slate 800 */
+        }
+
+        /* Chart Container Utilities */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* Max width to prevent stretching */
+            height: 350px;    /* Default height */
+            max-height: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+
+        /* Palette Classes */
+        .bg-vibrant-primary { background-color: #06b6d4; } /* Cyan 500 */
+        .text-vibrant-primary { color: #06b6d4; }
+        .bg-vibrant-secondary { background-color: #f59e0b; } /* Amber 500 */
+        .text-vibrant-secondary { color: #f59e0b; }
+        .bg-vibrant-accent { background-color: #ef4444; } /* Red 500 */
+        .text-vibrant-accent { color: #ef4444; }
+        
+        .card-elevation {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease-in-out;
+        }
+        .card-elevation:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+    <!-- 
+    Palette Name: Energetic & Playful
+    Source: Provided "colour combinations" inspiration (Bright Blue/Cyan + Amber/Orange)
+    Strategy: High contrast for readability, vibrant accents for key data points.
+    
+    Structure Plan:
+    1. Header: Title & Total Count
+    2. Summary Cards: Key Risks & Needs
+    3. Charts: Category Mix (Donut), Power Load (Bar), Price Ranges (Float Bar)
+    4. Lists: High Risk Items & Vehicles
+    5. Footer: Assets & Next Steps
+    
+    NO SVG USED. NO MERMAID JS USED.
+    -->
+</head>
+<body class="bg-slate-50">
+
+    <!-- Navigation / Header -->
+    <nav class="bg-white shadow-md sticky top-0 z-50 border-b border-cyan-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex flex-col justify-center">
+                    <h1 class="text-2xl font-bold text-slate-800 tracking-tight">恳亲会摊位筹备报告</h1>
+                    <span class="text-xs text-slate-500 font-medium uppercase tracking-wider">Family Day Preparation • 2025年12月8日</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="hidden md:block text-right mr-4">
+                        <div class="text-xs text-slate-400">Total Vendors</div>
+                        <div class="text-2xl font-bold text-vibrant-primary">10</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16">
+
+        <!-- SECTION 1: EXECUTIVE SUMMARY -->
+        <section>
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-extrabold text-slate-900 sm:text-4xl">行政总览 Executive Summary</h2>
+                <p class="mt-4 max-w-2xl text-lg text-slate-600 mx-auto">
+                    本次活动共有10个摊位参与。目前的筹备重点在于<span class="font-bold text-vibrant-accent">电力负荷管理</span>与<span class="font-bold text-vibrant-primary">后勤车辆安排</span>。以下是关键风险指标。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Stat Card 1 -->
+                <div class="bg-white rounded-xl p-6 card-elevation border-t-4 border-red-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500 uppercase">高风险电力摊位</p>
+                            <p class="text-4xl font-bold text-slate-800 mt-2">4</p>
+                        </div>
+                        <div class="text-4xl text-red-100">⚡</div>
+                    </div>
+                    <p class="mt-4 text-sm text-slate-600">涉及电炸炉、大型饭锅、Waffle机等高功率设备，需独立MCB。</p>
+                </div>
+
+                <!-- Stat Card 2 -->
+                <div class="bg-white rounded-xl p-6 card-elevation border-t-4 border-cyan-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500 uppercase">特殊物资需求</p>
+                            <p class="text-4xl font-bold text-slate-800 mt-2">3</p>
+                        </div>
+                        <div class="text-4xl text-cyan-100">📦</div>
+                    </div>
+                    <p class="mt-4 text-sm text-slate-600">需要额外长桌或特殊拼接桌子配置。</p>
+                </div>
+
+                <!-- Stat Card 3 -->
+                <div class="bg-white rounded-xl p-6 card-elevation border-t-4 border-amber-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500 uppercase">需通行车辆</p>
+                            <p class="text-4xl font-bold text-slate-800 mt-2">12</p>
+                        </div>
+                        <div class="text-4xl text-amber-100">🚗</div>
+                    </div>
+                    <p class="mt-4 text-sm text-slate-600">保安组需放行的卸货与停车车辆总数。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: VENDOR COMPOSITION -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4">摊位类别分布</h3>
+                    <p class="text-slate-600 mb-6 leading-relaxed">
+                        摊位种类丰富，能够满足访客多样化的需求。<strong>热食与甜点</strong>占据了主要比例（80%），确保了食品供应的充足。服务类摊位如马光中医义诊为活动增添了公益色彩。
+                    </p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-orange-100 text-orange-600 font-bold text-sm">A</span>
+                            <span class="ml-3 text-slate-700"><strong>热食 (40%):</strong> 台湾小吃、泰式烧烤、韩国辣面等主食。</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-pink-100 text-pink-600 font-bold text-sm">B</span>
+                            <span class="ml-3 text-slate-700"><strong>甜点/饮料 (40%):</strong> 冰粉、Waffer、Saturbake糕点。</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-sm">C</span>
+                            <span class="ml-3 text-slate-700"><strong>服务/零售 (20%):</strong> 中医义诊、玩具盲盒。</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="flex flex-col justify-center items-center">
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <p class="text-center text-xs text-slate-400 mt-4">图表：摊位类别占比</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: POWER & SAFETY ANALYSIS -->
+        <section>
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-slate-800 flex items-center">
+                    <span class="bg-red-100 text-red-600 p-2 rounded-lg mr-3 text-xl">⚡</span>
+                    电力负荷与安全风险分析
+                </h3>
+                <p class="mt-3 text-slate-600 max-w-3xl">
+                    电力配置是本次筹备中最关键的安全环节。数据显示，<strong>40% 的摊位属于高电力风险</strong>，必须进行针对性的电路规划。请电工组特别留意以下数据。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Chart: Power Distribution -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+                    <h4 class="font-bold text-slate-700 mb-4 text-center">摊位电力需求等级分布</h4>
+                    <div class="chart-container">
+                        <canvas id="powerChart"></canvas>
+                    </div>
+                    <p class="text-xs text-slate-400 text-center mt-2">High Load: >1500W 或持续加热设备</p>
+                </div>
+
+                <!-- High Risk List Cards -->
+                <div class="space-y-4">
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                        <div class="flex justify-between">
+                            <h4 class="font-bold text-red-800">SUNDAY BEST FOOD</h4>
+                            <span class="text-xs font-bold bg-red-200 text-red-800 px-2 py-1 rounded">极高风险</span>
+                        </div>
+                        <p class="text-sm text-red-700 mt-1">设备：<strong>电炸炉 (Deep Fryer)</strong></p>
+                        <p class="text-xs text-red-600 mt-1">对策：必须连接独立断路器，不可共用插座。</p>
+                    </div>
+
+                    <div class="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg">
+                        <div class="flex justify-between">
+                            <h4 class="font-bold text-orange-800">觅食巷 & Saturbake</h4>
+                            <span class="text-xs font-bold bg-orange-200 text-orange-800 px-2 py-1 rounded">高负荷</span>
+                        </div>
+                        <p class="text-sm text-orange-700 mt-1">设备：<strong>电饭锅 (2500W / 一般)</strong></p>
+                        <p class="text-xs text-orange-600 mt-1">对策：避免同一排插接入两个电饭锅。</p>
+                    </div>
+
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                        <div class="flex justify-between">
+                            <h4 class="font-bold text-yellow-800">Waffer 摊位</h4>
+                            <span class="text-xs font-bold bg-yellow-200 text-yellow-800 px-2 py-1 rounded">持续加热</span>
+                        </div>
+                        <p class="text-sm text-yellow-700 mt-1">设备：<strong>Waffer 机器 (220-240V)</strong></p>
+                        <p class="text-xs text-yellow-600 mt-1">对策：机器启动电流大，需稳定电压。</p>
+                    </div>
+                    
+                    <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                         <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-slate-700">其他特殊热源</h4>
+                            <span class="text-xs bg-slate-200 px-2 py-1 rounded">防火注意</span>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-1">韩国辣面使用<strong>煤气炉</strong>。需检查灭火器位置及与易燃物（如棉花糖）的距离。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: ECONOMICS & LOGISTICS -->
+        <section>
+             <div class="mb-8">
+                <h3 class="text-2xl font-bold text-slate-800 flex items-center">
+                    <span class="bg-cyan-100 text-cyan-600 p-2 rounded-lg mr-3 text-xl">📊</span>
+                    价格区间与后勤通行
+                </h3>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Price Range Chart (Spans 2 columns) -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+                    <div class="mb-4">
+                        <h4 class="font-bold text-slate-700">摊位产品价格区间 (MYR)</h4>
+                        <p class="text-sm text-slate-500">此图表展示了各摊位的定价策略，大部分食品集中在 RM5 - RM15 区间，价格亲民。</p>
+                    </div>
+                    <div class="chart-container" style="height: 400px; width: 100%;">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Vehicle Access List (Spans 1 column) -->
+                <div class="bg-white rounded-xl shadow-sm p-0 border border-slate-100 overflow-hidden">
+                    <div class="bg-slate-50 p-4 border-b border-slate-100">
+                        <h4 class="font-bold text-slate-700 flex items-center">
+                            <span class="mr-2">🚗</span> 车辆放行白名单
+                        </h4>
+                        <p class="text-xs text-slate-500">供保安组核对</p>
+                    </div>
+                    <div class="p-4 h-[400px] overflow-y-auto custom-scrollbar">
+                        <ul class="space-y-3">
+                            <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">1367080-U</span>
+                                <span class="text-xs text-white bg-slate-400 px-2 py-1 rounded-full">马光</span>
+                            </li>
+                            <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">JSA 7293</span>
+                                <span class="text-xs text-white bg-cyan-500 px-2 py-1 rounded-full">觅食巷</span>
+                            </li>
+                             <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">JMQ 2698</span>
+                                <span class="text-xs text-white bg-cyan-500 px-2 py-1 rounded-full">觅食巷</span>
+                            </li>
+                             <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">JNJ 6996</span>
+                                <span class="text-xs text-white bg-cyan-500 px-2 py-1 rounded-full">觅食巷</span>
+                            </li>
+                            <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">VBY 993</span>
+                                <span class="text-xs text-white bg-pink-400 px-2 py-1 rounded-full">Jiggle</span>
+                            </li>
+                            <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">JTA 1826</span>
+                                <span class="text-xs text-white bg-orange-400 px-2 py-1 rounded-full">Joshua</span>
+                            </li>
+                            <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">JPC 4899</span>
+                                <span class="text-xs text-white bg-orange-400 px-2 py-1 rounded-full">Joshua</span>
+                            </li>
+                            <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">JQC 168</span>
+                                <span class="text-xs text-white bg-purple-400 px-2 py-1 rounded-full">丸美</span>
+                            </li>
+                             <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">JUB 7564</span>
+                                <span class="text-xs text-white bg-yellow-400 px-2 py-1 rounded-full">Waffer</span>
+                            </li>
+                             <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">SD 7287 Y</span>
+                                <span class="text-xs text-white bg-teal-400 px-2 py-1 rounded-full">Satur</span>
+                            </li>
+                             <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">JMS 410</span>
+                                <span class="text-xs text-white bg-red-400 px-2 py-1 rounded-full">Sunday</span>
+                            </li>
+                             <li class="flex items-center justify-between p-2 hover:bg-slate-50 rounded border-b border-slate-50">
+                                <span class="font-mono font-bold text-slate-600">JUW 668</span>
+                                <span class="text-xs text-white bg-red-800 px-2 py-1 rounded-full">韩面</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: ACTION PLAN & FOOTER -->
+        <footer class="bg-slate-800 text-slate-300 rounded-2xl p-8 mt-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h4 class="text-white text-lg font-bold mb-4">后续行动清单 (Action Items)</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-center">
+                            <span class="text-green-400 mr-2">✓</span>
+                            <span>收集所有摊位宣传素材 (已完成 100%)</span>
+                        </li>
+                        <li class="flex items-center">
+                            <span class="text-yellow-400 mr-2">➜</span>
+                            <span><strong>电工组：</strong> 检查 SUNDAY BEST & 觅食巷 独立插座安装</span>
+                        </li>
+                        <li class="flex items-center">
+                            <span class="text-yellow-400 mr-2">➜</span>
+                            <span><strong>总务组：</strong> 准备 CiCi Toys (12尺) 与 Jiggle (300cm) 长桌</span>
+                        </li>
+                        <li class="flex items-center">
+                            <span class="text-yellow-400 mr-2">➜</span>
+                            <span><strong>保安组：</strong> 打印车辆白名单并分发至门岗</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="text-right flex flex-col justify-between">
+                    <div>
+                        <p class="text-sm opacity-60">Report Generated on</p>
+                        <p class="font-bold text-white">Dec 08, 2025</p>
+                    </div>
+                    <div>
+                        <p class="text-sm">Created with Data from</p>
+                        <p class="text-cyan-400 font-medium">恳亲会摊位筹备详细报告.md</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- Chart.js Logic -->
+    <script>
+        // --- DATA PREPARATION ---
+        
+        // 1. Label Wrapping Utility (Mandatory)
+        function wrapLabel(label) {
+            const MAX_LENGTH = 16;
+            if (label.length <= MAX_LENGTH) return label;
+            
+            const words = label.split(' ');
+            const lines = [];
+            let currentLine = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                if ((currentLine + ' ' + words[i]).length <= MAX_LENGTH) {
+                    currentLine += ' ' + words[i];
+                } else {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+
+        // 2. Global Defaults
+        Chart.defaults.font.family = "'Noto Sans SC', sans-serif";
+        Chart.defaults.color = '#64748b'; // Slate 500
+        Chart.defaults.scale.grid.color = '#e2e8f0'; // Slate 200
+
+        // 3. Tooltip Config (Mandatory)
+        const tooltipConfig = {
+            callbacks: {
+                title: function(tooltipItems) {
+                    const item = tooltipItems[0];
+                    let label = item.chart.data.labels[item.dataIndex];
+                    if (Array.isArray(label)) {
+                        return label.join(' ');
+                    } else {
+                        return label;
+                    }
+                }
+            },
+            padding: 12,
+            backgroundColor: 'rgba(30, 41, 59, 0.9)', // Dark Slate
+            titleFont: { size: 14, weight: 'bold' },
+            bodyFont: { size: 13 }
+        };
+
+        // --- CHART 1: VENDOR CATEGORY (DONUT) ---
+        const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+        const categoryData = {
+            labels: ['热食与重型烹饪', '甜点与饮料', '服务与零售'], // Labels short enough, no wrap needed
+            datasets: [{
+                data: [4, 4, 2],
+                backgroundColor: [
+                    '#f97316', // Orange 500 (Hot Food)
+                    '#ec4899', // Pink 500 (Desserts)
+                    '#3b82f6'  // Blue 500 (Services)
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        };
+
+        new Chart(ctxCategory, {
+            type: 'doughnut',
+            data: categoryData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, padding: 20 }
+                    },
+                    tooltip: tooltipConfig
+                },
+                cutout: '65%'
+            }
+        });
+
+        // --- CHART 2: POWER DISTRIBUTION (BAR) ---
+        const ctxPower = document.getElementById('powerChart').getContext('2d');
+        const powerData = {
+            labels: ['High Risk (独立MCB)', 'Standard (一般插座)', 'Low/Gas (无电力)'],
+            datasets: [{
+                label: '摊位数量',
+                data: [4, 3, 3], // Based on analysis: 4 High, 3 Std, 3 Low/Gas
+                backgroundColor: [
+                    '#ef4444', // Red 500 (High)
+                    '#f59e0b', // Amber 500 (Std)
+                    '#10b981'  // Emerald 500 (Low)
+                ],
+                borderRadius: 6,
+                barPercentage: 0.6
+            }]
+        };
+
+        new Chart(ctxPower, {
+            type: 'bar',
+            data: powerData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: tooltipConfig
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // --- CHART 3: PRICE RANGES (FLOATING BAR) ---
+        // Data structure: [Min, Max]
+        const rawPriceData = [
+            { name: "Sunday Best", min: 6, max: 8 },
+            { name: "觅食巷 (Taiwan)", min: 10, max: 15 },
+            { name: "韩国辣面", min: 5, max: 8 },
+            { name: "Joshua BBQ", min: 8, max: 12 },
+            { name: "Waffer", min: 2, max: 10 },
+            { name: "Jiggle 冰粉", min: 2, max: 15 },
+            { name: "丸美章鱼烧", min: 15, max: 20 },
+            { name: "Saturbake", min: 3, max: 10 },
+            { name: "马光中医", min: 5, max: 15 },
+            { name: "CiCi Toys", min: 5, max: 40 }
+        ];
+
+        // Process labels for wrapping
+        const priceLabels = rawPriceData.map(item => wrapLabel(item.name));
+        const priceRanges = rawPriceData.map(item => [item.min, item.max]);
+
+        const ctxPrice = document.getElementById('priceChart').getContext('2d');
+        
+        new Chart(ctxPrice, {
+            type: 'bar',
+            data: {
+                labels: priceLabels,
+                datasets: [{
+                    label: '价格区间 (MYR)',
+                    data: priceRanges,
+                    backgroundColor: '#06b6d4', // Cyan 500
+                    borderWidth: 1,
+                    borderColor: '#0891b2',
+                    borderSkipped: false, // Important for floating bars
+                    borderRadius: 4,
+                    barPercentage: 0.7
+                }]
+            },
+            options: {
+                indexAxis: 'y', // Horizontal bar
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: tooltipConfig
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '价格 (MYR)'
+                        }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>

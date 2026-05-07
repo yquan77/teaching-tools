@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>MOEIS 按钮修复小工具</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f7f6; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; }
+        .btn { background: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; cursor: move; display: inline-block; margin: 20px 0; }
+        .instructions { color: #666; font-size: 0.9em; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🪄 MOEIS 按钮魔法修复</h2>
+        <p class="instructions">由于系统限制，请按以下步骤操作：</p>
+        
+        <a class="btn" href="javascript:(function(){function f(w){var b=w.document.querySelectorAll('.btn-sahlaporan-bulanan, button');var found=false;for(var i=0;i<b.length;i++){if(b[i].innerText.includes('Sahkan')||b[i].className.includes('btn-sahlaporan')){b[i].disabled=false;b[i].classList.remove('disabled','btn-secondary');b[i].classList.add('btn-success');b[i].style.opacity='1';b[i].style.pointerEvents='auto';found=true;}}var ifrs=w.document.getElementsByTagName('iframe');for(var j=0;j<ifrs.length;j++){try{if(f(ifrs[j].contentWindow))found=true;}catch(e){}}return found;}if(f(window)){alert('✅ 按钮已解锁！');}else{alert('❌ 未找到按钮');}})();">
+           把这个按钮拖到你的【书签栏】
+        </a>
+
+        <div class="instructions">
+            <p>1. <b>不要</b>使用 MOE 账号浏览器，请打开 <b>Guest Mode</b> 或 <b>个人账号</b>。<br>
+            2. 将上面的绿色按钮<b>拖动</b>到浏览器顶部的书签栏。<br>
+            3. 回到 MOEIS 报表页面，点一下书签栏的这个新标签即可。</p>
+        </div>
+    </div>
+</body>
+</html>

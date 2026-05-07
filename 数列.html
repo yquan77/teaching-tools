@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数序列小探险 - 二年级数学</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Removed external Lucide script to prevent loading errors -->
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .animate-bounce-slow {
+            animation: bounce-slow 3s infinite;
+        }
+        
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(-5%); }
+            50% { transform: translateY(0); }
+        }
+        
+        .animate-spin-slow {
+            animation: spin 3s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c7c7c7; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8; 
+        }
+    </style>
+</head>
+<body class="bg-indigo-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Internal Icons (Replaces external dependency to fix errors) ---
+        const IconBase = ({ children, size = 24, className = "" }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                {children}
+            </svg>
+        );
+
+        const BookOpen = (props) => (
+            <IconBase {...props}>
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+            </IconBase>
+        );
+
+        const CircleCheck = (props) => (
+            <IconBase {...props}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="m9 12 2 2 4-4" />
+            </IconBase>
+        );
+
+        const Play = (props) => (
+            <IconBase {...props}>
+                <polygon points="5 3 19 12 5 21 5 3" />
+            </IconBase>
+        );
+
+        const Trophy = (props) => (
+            <IconBase {...props}>
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+            </IconBase>
+        );
+
+        const Home = (props) => (
+            <IconBase {...props}>
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+            </IconBase>
+        );
+
+        const Star = (props) => (
+            <IconBase {...props}>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </IconBase>
+        );
+
+        const ArrowRight = (props) => (
+            <IconBase {...props}>
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+            </IconBase>
+        );
+
+        const ChevronLeft = (props) => (
+            <IconBase {...props}>
+                <path d="m15 18-6-6 6-6" />
+            </IconBase>
+        );
+
+        const ChevronRight = (props) => (
+            <IconBase {...props}>
+                <path d="m9 18 6-6-6-6" />
+            </IconBase>
+        );
+
+        // --- Utility Functions ---
+
+        const generateSequence = (type) => {
+            let start, step, length = 5;
+            
+            // Random start base
+            const base = Math.floor(Math.random() * 500) + 100;
+
+            switch (type) {
+                case 'ones': step = 1; start = base; break;
+                case 'twos': step = 2; start = base; break;
+                case 'fives': step = 5; start = Math.floor(base / 5) * 5; break; // Align to 5
+                case 'tens': step = 10; start = Math.floor(base / 10) * 10; break;
+                case 'hundreds': step = 100; start = Math.floor(Math.random() * 5) * 100 + 100; break;
+                default: step = 1; start = base;
+            }
+
+            const isAscending = Math.random() > 0.5;
+            let sequence = [];
+            
+            for (let i = 0; i < length; i++) {
+                sequence.push(isAscending ? start + (i * step) : start + ((length - 1 - i) * step));
+            }
+
+            // Determine missing index
+            const missingIndex = Math.floor(Math.random() * length);
+            const answer = sequence[missingIndex];
+            
+            // Generate distractors
+            let options = [answer];
+            while (options.length < 3) {
+                const distractor = answer + (Math.floor(Math.random() * 5) + 1) * (Math.random() > 0.5 ? 1 : -1) * (step === 100 ? 100 : 1);
+                if (!options.includes(distractor) && distractor > 0) {
+                    options.push(distractor);
+                }
+            }
+            
+            return {
+                sequence,
+                missingIndex,
+                answer,
+                options: options.sort(() => Math.random() - 0.5),
+                patternType: type,
+                isAscending,
+                step
+            };
+        };
+
+        // --- Components ---
+
+        const Button = ({ children, onClick, className = "", variant = "primary" }) => {
+            const baseStyle = "px-6 py-3 rounded-2xl font-bold text-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-[0_4px_0_0_rgba(0,0,0,0.2)] flex items-center justify-center gap-2 select-none";
+            const variants = {
+                primary: "bg-blue-500 hover:bg-blue-400 text-white border-b-4 border-blue-700",
+                success: "bg-green-500 hover:bg-green-400 text-white border-b-4 border-green-700",
+                warning: "bg-yellow-400 hover:bg-yellow-300 text-yellow-900 border-b-4 border-yellow-600",
+                danger: "bg-red-500 hover:bg-red-400 text-white border-b-4 border-red-700",
+                neutral: "bg-white hover:bg-gray-50 text-gray-700 border-b-4 border-gray-300"
+            };
+
+            return (
+                <button onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`}>
+                    {children}
+                </button>
+            );
+        };
+
+        const Card = ({ children, className = "" }) => (
+            <div className={`bg-white rounded-3xl p-6 shadow-xl border-4 border-indigo-100 ${className}`}>
+                {children}
+            </div>
+        );
+
+        // --- Main Views ---
+
+        const MainMenu = ({ onNavigate }) => (
+            <div className="flex flex-col items-center justify-center min-h-screen py-10 px-4">
+                <div className="text-center space-y-4 animate-bounce-slow mb-10">
+                    <h1 className="text-4xl md:text-6xl font-black text-indigo-600 tracking-wider drop-shadow-sm">
+                        数序列小探险
+                    </h1>
+                    <p className="text-xl md:text-2xl text-indigo-400 font-medium">二年级数学 • 1.7 有规律的数列</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+                    <div 
+                        onClick={() => onNavigate('learn')}
+                        className="group cursor-pointer bg-gradient-to-br from-blue-400 to-blue-600 rounded-3xl p-6 md:p-8 text-white shadow-lg transform transition-all hover:-translate-y-2 hover:shadow-2xl border-b-8 border-blue-800"
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <BookOpen size={40} className="opacity-90 group-hover:scale-110 transition-transform" />
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-xs md:text-sm font-bold">基础知识</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold mb-2">学习乐园</h2>
+                        <p className="opacity-90 text-sm md:text-base">认识顺序、逆序和各种数列规律。</p>
+                    </div>
+
+                    <div 
+                        onClick={() => onNavigate('practice')}
+                        className="group cursor-pointer bg-gradient-to-br from-green-400 to-green-600 rounded-3xl p-6 md:p-8 text-white shadow-lg transform transition-all hover:-translate-y-2 hover:shadow-2xl border-b-8 border-green-800"
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <CircleCheck size={40} className="opacity-90 group-hover:scale-110 transition-transform" />
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-xs md:text-sm font-bold">技能巩固</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold mb-2">练习工坊</h2>
+                        <p className="opacity-90 text-sm md:text-base">动手填一填，完成有规律的数列。</p>
+                    </div>
+
+                    <div 
+                        onClick={() => onNavigate('game')}
+                        className="group cursor-pointer bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-6 md:p-8 text-white shadow-lg transform transition-all hover:-translate-y-2 hover:shadow-2xl border-b-8 border-orange-700"
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <Play size={40} className="opacity-90 group-hover:scale-110 transition-transform" />
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-xs md:text-sm font-bold">趣味挑战</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold mb-2">数列小火车</h2>
+                        <p className="opacity-90 text-sm md:text-base">开动脑筋，帮小火车找回丢失的车厢！</p>
+                    </div>
+
+                    <div 
+                        onClick={() => onNavigate('quiz')}
+                        className="group cursor-pointer bg-gradient-to-br from-purple-400 to-purple-600 rounded-3xl p-6 md:p-8 text-white shadow-lg transform transition-all hover:-translate-y-2 hover:shadow-2xl border-b-8 border-purple-800"
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <Trophy size={40} className="opacity-90 group-hover:scale-110 transition-transform" />
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-xs md:text-sm font-bold">自我评估</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold mb-2">终极挑战</h2>
+                        <p className="opacity-90 text-sm md:text-base">测一测，看看你掌握了多少？</p>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const LearnSection = ({ onBack }) => {
+            const [step, setStep] = useState(0);
+
+            const lessons = [
+                {
+                    title: "什么是数列？",
+                    content: (
+                        <div className="text-center space-y-6">
+                            <p className="text-xl md:text-2xl text-gray-700">数列就是一排<span className="font-bold text-indigo-600">有规律</span>排列的数目。</p>
+                            <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4 text-2xl md:text-3xl font-mono bg-indigo-50 p-6 rounded-xl">
+                                <div className="animate-pulse">200</div>
+                                <ArrowRight className="text-gray-400" />
+                                <div className="animate-pulse delay-100">202</div>
+                                <ArrowRight className="text-gray-400" />
+                                <div className="animate-pulse delay-200">204</div>
+                                <ArrowRight className="text-gray-400" />
+                                <div className="animate-pulse delay-300">206</div>
+                            </div>
+                            <p className="text-lg md:text-xl text-gray-600">看！它们每个都比前一个多 2。</p>
+                        </div>
+                    )
+                },
+                {
+                    title: "顺序 (从小到大)",
+                    content: (
+                        <div className="text-center space-y-6">
+                            <p className="text-xl md:text-2xl text-gray-700">数字越来越<span className="font-bold text-green-600 text-3xl">大</span>，就像爬楼梯！</p>
+                            <div className="flex items-end justify-center gap-2 h-48">
+                                {[1, 2, 3, 4, 5].map((h, i) => (
+                                    <div key={i} className="w-12 md:w-16 bg-green-400 rounded-t-lg flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-md transition-all duration-500" style={{ height: `${h * 20}%` }}>
+                                        {100 + i}
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-base md:text-lg bg-green-100 text-green-800 p-3 rounded-lg inline-block">100, 101, 102, 103, 104...</p>
+                        </div>
+                    )
+                },
+                {
+                    title: "逆序 (从大到小)",
+                    content: (
+                        <div className="text-center space-y-6">
+                            <p className="text-xl md:text-2xl text-gray-700">数字越来越<span className="font-bold text-orange-600 text-3xl">小</span>，就像下楼梯！</p>
+                            <div className="flex items-end justify-center gap-2 h-48">
+                                {[5, 4, 3, 2, 1].map((h, i) => (
+                                    <div key={i} className="w-12 md:w-16 bg-orange-400 rounded-t-lg flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-md transition-all duration-500" style={{ height: `${h * 20}%` }}>
+                                        {200 - i}
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-base md:text-lg bg-orange-100 text-orange-800 p-3 rounded-lg inline-block">200, 199, 198, 197, 196...</p>
+                        </div>
+                    )
+                },
+                {
+                    title: "常见的规律",
+                    content: (
+                        <div className="grid grid-cols-1 gap-4 text-left max-w-2xl mx-auto">
+                            <div className="bg-blue-50 p-4 rounded-xl border-l-8 border-blue-500">
+                                <h3 className="font-bold text-lg md:text-xl text-blue-800 mb-2">一个一个地数 (+1)</h3>
+                                <p className="text-xl md:text-2xl font-mono text-gray-700">350, 351, 352, 353</p>
+                            </div>
+                            <div className="bg-purple-50 p-4 rounded-xl border-l-8 border-purple-500">
+                                <h3 className="font-bold text-lg md:text-xl text-purple-800 mb-2">两个两个地数 (+2)</h3>
+                                <p className="text-xl md:text-2xl font-mono text-gray-700">420, 422, 424, 426</p>
+                            </div>
+                            <div className="bg-pink-50 p-4 rounded-xl border-l-8 border-pink-500">
+                                <h3 className="font-bold text-lg md:text-xl text-pink-800 mb-2">十个十个地数 (+10)</h3>
+                                <p className="text-xl md:text-2xl font-mono text-gray-700">610, 620, 630, 640</p>
+                            </div>
+                            <div className="bg-teal-50 p-4 rounded-xl border-l-8 border-teal-500">
+                                <h3 className="font-bold text-lg md:text-xl text-teal-800 mb-2">百个百个地数 (+100)</h3>
+                                <p className="text-xl md:text-2xl font-mono text-gray-700">200, 300, 400, 500</p>
+                            </div>
+                        </div>
+                    )
+                }
+            ];
+
+            return (
+                <div className="max-w-4xl mx-auto py-8 px-4 min-h-screen flex flex-col">
+                    <div className="flex justify-between items-center mb-6">
+                        <Button variant="neutral" onClick={onBack} className="flex items-center gap-2 text-sm md:text-lg">
+                            <Home size={20} /> <span className="hidden md:inline">返回主页</span>
+                        </Button>
+                        <div className="text-gray-400 font-bold">
+                            课程 {step + 1} / {lessons.length}
+                        </div>
+                    </div>
+
+                    <Card className="flex-1 flex flex-col justify-between min-h-[500px]">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-black text-indigo-700 mb-8 border-b-2 border-indigo-100 pb-4">
+                                {lessons[step].title}
+                            </h2>
+                            <div className="py-4">
+                                {lessons[step].content}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
+                            <Button 
+                                variant="neutral" 
+                                onClick={() => setStep(Math.max(0, step - 1))}
+                                className={step === 0 ? "opacity-50 pointer-events-none" : ""}
+                            >
+                                <ChevronLeft size={24} /> <span className="hidden md:inline">上一页</span>
+                            </Button>
+                            
+                            <div className="flex gap-2 items-center">
+                                {lessons.map((_, i) => (
+                                    <div key={i} className={`w-3 h-3 rounded-full transition-colors ${i === step ? 'bg-indigo-500' : 'bg-gray-200'}`} />
+                                ))}
+                            </div>
+
+                            <Button 
+                                variant={step === lessons.length - 1 ? "success" : "primary"}
+                                onClick={() => {
+                                    if (step < lessons.length - 1) setStep(step + 1);
+                                    else onBack();
+                                }}
+                            >
+                                {step === lessons.length - 1 ? "完成" : "下一页"} 
+                                {step !== lessons.length - 1 && <ChevronRight size={24} className="inline ml-1"/>}
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
+            );
+        };
+
+        const PracticeSection = ({ onBack }) => {
+            const [problem, setProblem] = useState(null);
+            const [message, setMessage] = useState(null);
+            const [streak, setStreak] = useState(0);
+
+            const nextProblem = () => {
+                const types = ['ones', 'twos', 'fives', 'tens', 'hundreds'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                setProblem(generateSequence(type));
+                setMessage(null);
+            };
+
+            useEffect(() => {
+                nextProblem();
+            }, []);
+
+            const handleAnswer = (val) => {
+                if (!problem) return;
+                if (val === problem.answer) {
+                    setMessage({ type: 'success', text: '太棒了！答对了！🎉' });
+                    setStreak(s => s + 1);
+                    setTimeout(nextProblem, 1500);
+                } else {
+                    setMessage({ type: 'error', text: '哎呀，再试一次吧！🤔' });
+                    setStreak(0);
+                }
+            };
+
+            if (!problem) return <div className="text-center mt-20">Loading...</div>;
+
+            return (
+                <div className="max-w-3xl mx-auto py-8 px-4">
+                    <div className="flex justify-between items-center mb-8">
+                        <Button variant="neutral" onClick={onBack}><Home size={20} /></Button>
+                        <div className="bg-yellow-100 text-yellow-800 px-4 md:px-6 py-2 rounded-full font-bold flex items-center gap-2 text-sm md:text-base">
+                            <Star className="fill-current" size={16} /> 连续答对: {streak}
+                        </div>
+                    </div>
+
+                    <Card className="text-center py-12">
+                        <h3 className="text-xl md:text-2xl font-bold text-gray-600 mb-2">找出规律，填一填</h3>
+                        <p className="text-sm text-gray-400 mb-8">
+                            ({problem.isAscending ? '顺序' : '逆序'}, {
+                                problem.step === 1 ? '一个一个' : 
+                                problem.step === 2 ? '两个两个' : 
+                                problem.step === 5 ? '五个五个' : 
+                                problem.step === 10 ? '十个十个' : '百个百个'
+                            }地数)
+                        </p>
+
+                        <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4 mb-12">
+                            {problem.sequence.map((num, idx) => (
+                                <div key={idx} className="flex items-center">
+                                    <div 
+                                        className={`
+                                            w-14 h-14 md:w-24 md:h-24 flex items-center justify-center rounded-2xl text-lg md:text-3xl font-bold shadow-md transform transition-all
+                                            ${idx === problem.missingIndex 
+                                                ? 'bg-gray-100 border-4 border-dashed border-gray-300 text-transparent' 
+                                                : 'bg-indigo-100 text-indigo-700 border-b-4 border-indigo-200'}
+                                        `}
+                                    >
+                                        {idx === problem.missingIndex ? '?' : num}
+                                    </div>
+                                    {idx < problem.sequence.length - 1 && (
+                                        <ArrowRight className="text-gray-300 mx-1 md:mx-2 w-4 md:w-6" />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 max-w-lg mx-auto">
+                            {problem.options.map((opt, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => handleAnswer(opt)}
+                                    className="bg-white hover:bg-indigo-50 border-4 border-indigo-100 hover:border-indigo-400 text-indigo-600 font-bold text-xl md:text-2xl py-4 rounded-xl transition-all shadow-sm hover:-translate-y-1 active:scale-95"
+                                >
+                                    {opt}
+                                </button>
+                            ))}
+                        </div>
+
+                        {message && (
+                            <div className={`mt-8 p-4 rounded-xl text-lg font-bold animate-bounce ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {message.text}
+                            </div>
+                        )}
+                    </Card>
+                </div>
+            );
+        };
+
+        const GameSection = ({ onBack }) => {
+            const [gameState, setGameState] = useState('playing'); // playing, won, lost
+            const [level, setLevel] = useState(1);
+            const [problem, setProblem] = useState(null);
+
+            useEffect(() => {
+                generateLevel();
+            }, [level]);
+
+            const generateLevel = () => {
+                const types = ['ones', 'twos', 'fives', 'tens', 'hundreds'];
+                const type = types[Math.min(level - 1, types.length - 1)] || types[Math.floor(Math.random() * types.length)];
+                setProblem(generateSequence(type));
+                setGameState('playing');
+            };
+
+            const handleChoice = (val) => {
+                if (val === problem.answer) {
+                    setGameState('won');
+                    setTimeout(() => {
+                        setLevel(l => l + 1);
+                    }, 1500);
+                } else {
+                    setGameState('lost');
+                }
+            };
+
+            if (!problem) return null;
+
+            return (
+                <div className="max-w-4xl mx-auto md:py-6 md:px-4 flex flex-col h-screen md:h-auto md:min-h-screen bg-sky-50 md:rounded-3xl overflow-hidden relative">
+                    <div className="absolute top-10 left-10 text-sky-200 animate-pulse"><Star size={40} /></div>
+                    <div className="absolute top-20 right-20 text-sky-200 animate-pulse delay-700"><Star size={30} /></div>
+
+                    <div className="relative z-10 flex justify-between items-center p-4">
+                        <Button variant="neutral" onClick={onBack}><Home size={20} /></Button>
+                        <div className="text-xl md:text-2xl font-black text-sky-600 bg-white px-4 md:px-6 py-2 rounded-full shadow-sm border-2 border-sky-100">
+                            关卡 {level}
+                        </div>
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center justify-center relative p-4">
+                        <div className="text-center mb-8 md:mb-12">
+                            <h2 className="text-2xl md:text-3xl font-bold text-sky-800 mb-2">
+                                {gameState === 'playing' ? "小火车少了一节车厢！" : 
+                                 gameState === 'won' ? "太棒了！出发！🚂💨" : "哎呀，车厢接不上了！💥"}
+                            </h2>
+                            <p className="text-sky-600">请选择正确的数字修好火车。</p>
+                        </div>
+
+                        {/* Train Visualization */}
+                        <div className="flex items-end gap-1 mb-10 md:mb-16 overflow-x-auto p-4 w-full justify-start md:justify-center no-scrollbar">
+                            <div className="flex flex-col items-center flex-shrink-0">
+                                <div className="w-6 h-8 md:w-8 md:h-12 bg-black/20 mx-auto rounded-t-lg"></div>
+                                <div className="w-20 h-20 md:w-24 md:h-24 bg-red-500 rounded-t-3xl rounded-b-xl relative flex items-center justify-center border-b-8 border-gray-800 shadow-xl z-10">
+                                    <span className="text-3xl md:text-4xl">🚂</span>
+                                </div>
+                                <div className="flex gap-2 mt-[-10px] z-20">
+                                    <div className="w-5 h-5 md:w-6 md:h-6 bg-gray-800 rounded-full border-4 border-gray-400 animate-spin-slow"></div>
+                                    <div className="w-6 h-6 md:w-8 md:h-8 bg-gray-800 rounded-full border-4 border-gray-400 animate-spin-slow"></div>
+                                </div>
+                            </div>
+
+                            {problem.sequence.map((num, idx) => (
+                                <div key={idx} className="flex flex-col items-center relative group flex-shrink-0">
+                                    <div className="absolute left-[-5px] bottom-6 w-3 h-2 bg-gray-800 z-0"></div>
+                                    
+                                    <div className={`
+                                        w-20 h-16 md:w-24 md:h-20 rounded-lg flex items-center justify-center text-xl md:text-3xl font-black shadow-lg border-b-8 transition-all
+                                        ${idx === problem.missingIndex 
+                                            ? 'bg-gray-200 border-gray-400 text-gray-400 border-dashed border-4' 
+                                            : 'bg-blue-400 border-blue-600 text-white'}
+                                    `}>
+                                        {idx === problem.missingIndex ? '?' : num}
+                                    </div>
+
+                                    <div className="flex gap-4 mt-[-8px] z-10">
+                                        <div className="w-5 h-5 md:w-6 md:h-6 bg-gray-700 rounded-full border-2 border-gray-400"></div>
+                                        <div className="w-5 h-5 md:w-6 md:h-6 bg-gray-700 rounded-full border-2 border-gray-400"></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Options */}
+                        {gameState === 'playing' && (
+                            <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+                                {problem.options.map((opt, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleChoice(opt)}
+                                        className="w-20 h-20 md:w-24 md:h-24 bg-yellow-400 hover:bg-yellow-300 border-b-8 border-yellow-600 rounded-2xl text-2xl md:text-3xl font-bold text-yellow-900 shadow-xl transform transition-all hover:-translate-y-2 active:scale-95"
+                                    >
+                                        {opt}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {gameState === 'lost' && (
+                            <div className="text-center">
+                                <Button variant="warning" onClick={() => generateLevel()}>再试一次</Button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const QuizSection = ({ onBack }) => {
+            const [questions, setQuestions] = useState([]);
+            const [currentQ, setCurrentQ] = useState(0);
+            const [score, setScore] = useState(0);
+            const [showResult, setShowResult] = useState(false);
+            const [selectedAnswer, setSelectedAnswer] = useState(null);
+
+            useEffect(() => {
+                const qs = Array(5).fill(null).map((_, i) => {
+                    const types = ['ones', 'twos', 'fives', 'tens', 'hundreds'];
+                    const p = generateSequence(types[i % types.length]);
+                    return { ...p, id: i };
+                });
+                setQuestions(qs);
+            }, []);
+
+            const handleAnswer = (val) => {
+                setSelectedAnswer(val);
+                const isCorrect = val === questions[currentQ].answer;
+                if (isCorrect) setScore(s => s + 1);
+
+                setTimeout(() => {
+                    if (currentQ < questions.length - 1) {
+                        setCurrentQ(c => c + 1);
+                        setSelectedAnswer(null);
+                    } else {
+                        setShowResult(true);
+                    }
+                }, 1000);
+            };
+
+            if (questions.length === 0) return <div>Loading...</div>;
+
+            if (showResult) {
+                return (
+                    <div className="flex flex-col items-center justify-center min-h-screen space-y-8 animate-fade-in px-4">
+                        <Trophy size={80} className="text-yellow-500 animate-bounce" />
+                        <h2 className="text-3xl md:text-4xl font-bold text-indigo-800">测验完成！</h2>
+                        <div className="text-xl md:text-2xl text-gray-600">
+                            你的得分是：<span className="text-4xl md:text-5xl font-black text-indigo-600">{score}</span> / {questions.length}
+                        </div>
+                        <div className="flex gap-4">
+                            <Button variant="neutral" onClick={onBack}>返回主页</Button>
+                            <Button variant="primary" onClick={() => {
+                                setShowResult(false);
+                                setScore(0);
+                                setCurrentQ(0);
+                                setSelectedAnswer(null);
+                                const qs = Array(5).fill(null).map((_, i) => generateSequence(['ones', 'twos', 'fives', 'tens', 'hundreds'][i % 5]));
+                                setQuestions(qs);
+                            }}>再测一次</Button>
+                        </div>
+                    </div>
+                );
+            }
+
+            const q = questions[currentQ];
+
+            return (
+                <div className="max-w-2xl mx-auto py-8 px-4">
+                    <div className="flex justify-between items-center mb-6">
+                        <Button variant="neutral" onClick={onBack} size="sm">退出</Button>
+                        <div className="text-lg md:text-xl font-bold text-indigo-600">第 {currentQ + 1} / {questions.length} 题</div>
+                    </div>
+
+                    <div className="w-full bg-gray-200 rounded-full h-3 mb-8">
+                        <div className="bg-indigo-500 h-3 rounded-full transition-all duration-300" style={{ width: `${((currentQ) / questions.length) * 100}%` }}></div>
+                    </div>
+
+                    <Card>
+                        <h3 className="text-lg md:text-xl font-bold text-gray-700 mb-8 text-center">
+                            请选择正确的数字填入空格：
+                        </h3>
+                        
+                        <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-10">
+                            {q.sequence.map((num, idx) => (
+                                <div key={idx} className={`
+                                    px-3 py-2 md:px-6 md:py-4 rounded-lg font-mono text-lg md:text-2xl font-bold
+                                    ${idx === q.missingIndex 
+                                        ? 'bg-indigo-100 text-indigo-600 border-2 border-indigo-300 border-dashed' 
+                                        : 'bg-gray-50 text-gray-700 border border-gray-200'}
+                                `}>
+                                    {idx === q.missingIndex ? '?' : num}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {q.options.map((opt, i) => {
+                                let stateClass = "bg-white hover:bg-gray-50 border-gray-200 text-gray-700";
+                                if (selectedAnswer !== null) {
+                                    if (opt === q.answer) stateClass = "bg-green-100 border-green-500 text-green-700";
+                                    else if (opt === selectedAnswer) stateClass = "bg-red-100 border-red-500 text-red-700";
+                                    else stateClass = "opacity-50";
+                                }
+
+                                return (
+                                    <button
+                                        key={i}
+                                        disabled={selectedAnswer !== null}
+                                        onClick={() => handleAnswer(opt)}
+                                        className={`border-4 rounded-xl py-4 text-xl font-bold transition-all ${stateClass}`}
+                                    >
+                                        {opt}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </Card>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState('menu');
+
+            return (
+                <div className="min-h-screen bg-indigo-50 font-sans text-gray-800 selection:bg-indigo-200">
+                    {view === 'menu' && <MainMenu onNavigate={setView} />}
+                    {view === 'learn' && <LearnSection onBack={() => setView('menu')} />}
+                    {view === 'practice' && <PracticeSection onBack={() => setView('menu')} />}
+                    {view === 'game' && <GameSection onBack={() => setView('menu')} />}
+                    {view === 'quiz' && <QuizSection onBack={() => setView('menu')} />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

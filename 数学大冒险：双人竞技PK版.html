@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数学大冒险：双人竞技PK版</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- 引入 Babel 用于解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-popIn {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 3s linear infinite;
+        }
+        @keyframes bounce-in {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .animate-bounce-in {
+            animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .neon-text {
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00de, 0 0 30px #ff00de;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- 图标组件 ---
+        const Train = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="16" height="12" x="4" y="5" rx="2"/><path d="M15 2v3"/><path d="M9 2v3"/><path d="M14 17h1"/><path d="m5 17 2 5h10l2-5"/><circle cx="12" cy="12" r="2"/></svg>
+        );
+        const Trophy = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        );
+        const Home = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        );
+        const RefreshCw = ({size=24, className=""}) => (
+             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        );
+        const UserPlus = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" x2="20" y1="8" y2="14"/><line x1="23" x2="17" y1="11" y2="11"/></svg>
+        );
+
+        // --- 组件：全屏烟花 ---
+        const Confetti = () => (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden z-50 flex justify-center items-center">
+             <div className="absolute top-1/4 left-1/4 animate-bounce text-6xl">🎉</div>
+             <div className="absolute top-1/3 right-1/4 animate-pulse text-6xl delay-75">⭐</div>
+             <div className="absolute top-1/2 left-1/3 animate-ping text-6xl delay-150 text-yellow-400">✨</div>
+             <div className="absolute bottom-1/3 right-1/3 animate-bounce text-6xl delay-300">🎈</div>
+          </div>
+        );
+
+        // --- 逻辑：学生池管理 ---
+        const TOTAL_STUDENTS = 40;
+        const generateStudentPool = () => Array.from({ length: TOTAL_STUDENTS }, (_, i) => i + 1);
+
+        // --- 全局样式容器 ---
+        const GameContainer = ({ children, className = "" }) => (
+          <div className={`min-h-screen bg-gradient-to-b from-slate-800 to-slate-900 font-sans select-none overflow-hidden flex flex-col ${className}`}>
+             {children}
+          </div>
+        );
+
+        // --- 组件：滚动数字 (模拟抽奖效果) ---
+        const RollingNumber = ({ value, color }) => {
+            const [display, setDisplay] = useState(value);
+            
+            useEffect(() => {
+                let count = 0;
+                const interval = setInterval(() => {
+                    setDisplay(Math.floor(Math.random() * 40) + 1);
+                    count++;
+                    if (count > 10) {
+                        clearInterval(interval);
+                        setDisplay(value);
+                    }
+                }, 50);
+                return () => clearInterval(interval);
+            }, [value]);
+
+            return <span className={color}>#{display}</span>;
+        };
+
+        // --- 组件：学生抽签器 (初始2人) ---
+        const StudentSelector = ({ availableStudents, onStudentsSelected, onBack }) => {
+           const [isRolling, setIsRolling] = useState(false);
+           const [displayNumbers, setDisplayNumbers] = useState(['?', '?']);
+           const [selected, setSelected] = useState(null);
+
+           const startRoll = () => {
+               if (availableStudents.length < 2) {
+                   alert("人数不足，正在重置...");
+                   return;
+               }
+               setIsRolling(true);
+               setSelected(null);
+               
+               let count = 0;
+               const interval = setInterval(() => {
+                   setDisplayNumbers([
+                       Math.floor(Math.random() * 40) + 1,
+                       Math.floor(Math.random() * 40) + 1
+                   ]);
+                   count++;
+                   if (count > 20) {
+                       clearInterval(interval);
+                       finalizeSelection();
+                   }
+               }, 100);
+           };
+
+           const finalizeSelection = () => {
+               const pool = [...availableStudents];
+               const idx1 = Math.floor(Math.random() * pool.length);
+               let idx2 = Math.floor(Math.random() * pool.length);
+               while (idx2 === idx1 && pool.length > 1) {
+                   idx2 = Math.floor(Math.random() * pool.length);
+               }
+
+               const s1 = pool[idx1];
+               const s2 = pool[idx2] !== undefined ? pool[idx2] : (pool[0] === s1 ? pool[1] : pool[0]); 
+
+               setDisplayNumbers([s1, s2]);
+               setSelected([s1, s2]);
+               setIsRolling(false);
+           };
+
+           return (
+               <div className="flex flex-col items-center justify-center h-full animate-fadeIn text-white p-8">
+                   <h2 className="text-4xl font-bold mb-12 text-yellow-400 neon-text">🎲 幸运大抽奖 (首发阵容) 🎲</h2>
+                   
+                   <div className="flex gap-12 mb-12">
+                       <div className="flex flex-col items-center">
+                           <span className="text-gray-400 mb-2 text-xl">选手 A</span>
+                           <div className="w-40 h-40 bg-gradient-to-br from-blue-500 to-blue-700 rounded-3xl flex items-center justify-center text-6xl font-black shadow-2xl border-4 border-blue-300">
+                               {displayNumbers[0]}
+                           </div>
+                       </div>
+                       <div className="flex flex-col items-center">
+                           <span className="text-gray-400 mb-2 text-xl">选手 B</span>
+                           <div className="w-40 h-40 bg-gradient-to-br from-red-500 to-red-700 rounded-3xl flex items-center justify-center text-6xl font-black shadow-2xl border-4 border-red-300">
+                               {displayNumbers[1]}
+                           </div>
+                       </div>
+                   </div>
+
+                   {!selected ? (
+                       <button 
+                           onClick={startRoll}
+                           disabled={isRolling}
+                           className="px-10 py-4 bg-green-500 hover:bg-green-600 text-white text-2xl font-bold rounded-full shadow-lg transform transition active:scale-95 disabled:opacity-50"
+                       >
+                           {isRolling ? "抽签中..." : "开始抽签"}
+                       </button>
+                   ) : (
+                       <div className="flex gap-6 animate-bounce-in">
+                           <button 
+                               onClick={onBack}
+                               className="px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-full"
+                           >
+                               返回
+                           </button>
+                           <button 
+                               onClick={() => onStudentsSelected(selected)}
+                               className="px-10 py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-xl rounded-full shadow-lg animate-pulse"
+                           >
+                               进入比赛 →
+                           </button>
+                       </div>
+                   )}
+                   
+                   <div className="mt-8 text-slate-500">
+                       剩余未上场人数: {availableStudents.length}
+                   </div>
+               </div>
+           );
+        };
+
+        // --- 竞技场容器 (Split Screen Layout) ---
+        const BattleArena = ({ gameType, students, onExit, onNextRound }) => {
+            const [targetNumber, setTargetNumber] = useState(0);
+            const [winner, setWinner] = useState(null); // 'left', 'right', or null
+            const [status, setStatus] = useState({ left: 'playing', right: 'playing' }); 
+
+            // 生成题目
+            const generateNewQuestion = () => {
+                const newNum = Math.floor(Math.random() * 900) + 100; // 100 - 999
+                setTargetNumber(newNum);
+                setWinner(null);
+                setStatus({ left: 'playing', right: 'playing' });
+            };
+
+            // 监听学生变化，重置游戏
+            useEffect(() => {
+                generateNewQuestion();
+            }, [students]); // 当学生变化（换人）时，自动出新题
+
+            const handleFinish = (side) => {
+                setStatus(prev => ({ ...prev, [side]: 'finished' }));
+                if (!winner) {
+                    setWinner(side);
+                }
+            };
+
+            const handleNextAction = () => {
+                if (winner) {
+                    // 有赢家，进行换人轮转
+                    onNextRound(winner);
+                } else {
+                    // 无赢家，单纯跳过题目
+                    generateNewQuestion();
+                }
+            };
+
+            return (
+                <div className="flex flex-col h-full">
+                    {/* 顶部信息栏 */}
+                    <div className="bg-slate-800 text-white p-4 shadow-lg z-20 flex justify-between items-center h-24 shrink-0 border-b border-slate-700">
+                         <div className="flex items-center gap-4">
+                             <button onClick={onExit} className="bg-slate-700 hover:bg-slate-600 p-2 rounded-full"><Home /></button>
+                             <div className="flex flex-col">
+                                 <h1 className="text-xl font-bold text-slate-300">
+                                     {gameType === 'train' ? "数位小火车 PK" : "数值拆拆乐 PK"}
+                                 </h1>
+                                 <div className="text-sm text-slate-500 flex gap-2">
+                                    <span className="bg-blue-900 px-2 py-0.5 rounded text-blue-200">A: #{students[0]}</span>
+                                    <span className="text-slate-600">VS</span>
+                                    <span className="bg-red-900 px-2 py-0.5 rounded text-red-200">B: #{students[1]}</span>
+                                 </div>
+                             </div>
+                         </div>
+
+                         {/* 题目显示区 */}
+                         <div className="flex flex-col items-center absolute left-1/2 transform -translate-x-1/2 bg-slate-900 px-8 py-2 rounded-2xl border-2 border-yellow-500/50 shadow-xl z-30">
+                             <span className="text-slate-400 text-xs uppercase tracking-widest">Target Number</span>
+                             <span className="text-5xl font-black text-yellow-400 tracking-widest font-mono">{targetNumber}</span>
+                         </div>
+
+                         <button 
+                             onClick={handleNextAction}
+                             className={`px-6 py-2 rounded-lg font-bold shadow flex items-center gap-2 transition-all duration-300 ${winner ? 'bg-green-600 hover:bg-green-700 animate-pulse scale-110' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                         >
+                             {winner ? (
+                                <>
+                                  <UserPlus size={20} />
+                                  <span className="hidden sm:inline">胜利者守擂：下一位挑战者</span>
+                                  <span className="sm:hidden">下一位</span>
+                                </>
+                             ) : (
+                                <>
+                                  <span className="hidden sm:inline">跳过 / 下一题</span>
+                                  <span className="sm:hidden">跳过</span>
+                                  <RefreshCw size={18} />
+                                </>
+                             )}
+                         </button>
+                    </div>
+
+                    {/* 分屏区域 */}
+                    <div className="flex-1 flex relative overflow-hidden">
+                        {/* 左侧选手 */}
+                        <div className={`flex-1 border-r-4 border-slate-700 relative flex flex-col transition-colors duration-500 ${winner === 'left' ? 'bg-blue-900/30' : 'bg-slate-800/50'}`}>
+                            <PlayerStatusOverlay 
+                                side="left" 
+                                status={status.left} 
+                                isWinner={winner === 'left'} 
+                                studentId={students[0]} 
+                                color="text-blue-400"
+                            />
+                            <div className="flex-1 relative">
+                                {gameType === 'train' ? (
+                                    <TrainPanel target={targetNumber} onFinish={() => handleFinish('left')} resetToken={targetNumber} />
+                                ) : (
+                                    <BubblePanel target={targetNumber} onFinish={() => handleFinish('left')} resetToken={targetNumber} />
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 右侧选手 */}
+                        <div className={`flex-1 relative flex flex-col transition-colors duration-500 ${winner === 'right' ? 'bg-red-900/30' : 'bg-slate-800/50'}`}>
+                            <PlayerStatusOverlay 
+                                side="right" 
+                                status={status.right} 
+                                isWinner={winner === 'right'} 
+                                studentId={students[1]}
+                                color="text-red-400"
+                            />
+                            <div className="flex-1 relative">
+                                {gameType === 'train' ? (
+                                    <TrainPanel target={targetNumber} onFinish={() => handleFinish('right')} resetToken={targetNumber} />
+                                ) : (
+                                    <BubblePanel target={targetNumber} onFinish={() => handleFinish('right')} resetToken={targetNumber} />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const PlayerStatusOverlay = ({ side, status, isWinner, studentId, color }) => (
+            <div className="h-16 flex items-center justify-between px-6 bg-slate-900/50 border-b border-slate-700/50">
+                <div className="text-2xl font-black">
+                   {/* 使用 RollingNumber 组件，当 studentId 变化时会有滚动效果 */}
+                   <RollingNumber value={studentId} color={color} />
+                </div>
+                <div>
+                    {isWinner && (
+                        <div className="flex items-center gap-2 text-yellow-400 font-bold text-xl animate-bounce">
+                            <Trophy /> 胜利!
+                        </div>
+                    )}
+                    {!isWinner && status === 'finished' && (
+                        <div className="text-green-400 font-bold text-xl">
+                            完成!
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+
+
+        // --- 游戏组件 1: 数位小火车 (单个面板) ---
+        const TrainPanel = ({ target, onFinish, resetToken }) => {
+            const [cargo, setCargo] = useState({ h: 0, t: 0, o: 0 });
+            const [isFinished, setIsFinished] = useState(false);
+
+            useEffect(() => {
+                setCargo({ h: 0, t: 0, o: 0 });
+                setIsFinished(false);
+            }, [resetToken]);
+
+            const targetH = Math.floor(target / 100);
+            const targetT = Math.floor((target % 100) / 10);
+            const targetO = target % 10;
+
+            useEffect(() => {
+                if (!isFinished && cargo.h === targetH && cargo.t === targetT && cargo.o === targetO) {
+                    setIsFinished(true);
+                    onFinish();
+                }
+            }, [cargo, targetH, targetT, targetO, isFinished, onFinish]);
+
+            const updateCargo = (type, delta) => {
+                if (isFinished) return;
+                setCargo(prev => {
+                    const newVal = Math.max(0, Math.min(9, prev[type] + delta));
+                    return { ...prev, [type]: newVal };
+                });
+            };
+
+            return (
+                <div className="h-full flex flex-col items-center justify-center p-2">
+                    {isFinished && <Confetti />}
+                    
+                    <div className="flex flex-col md:flex-row items-end gap-2 scale-90 sm:scale-100 origin-bottom">
+                        <TrainEngine num={target} />
+                        <Wagon label="百" val={cargo.h} target={targetH} type="h" update={updateCargo} color="bg-red-500" />
+                        <Wagon label="十" val={cargo.t} target={targetT} type="t" update={updateCargo} color="bg-yellow-500" />
+                        <Wagon label="一" val={cargo.o} target={targetO} type="o" update={updateCargo} color="bg-green-500" />
+                    </div>
+                </div>
+            );
+        };
+
+        const TrainEngine = ({ num }) => (
+            <div className="flex flex-col items-center mb-2">
+                 <div className="w-20 h-20 bg-slate-700 rounded-tr-xl relative flex items-center justify-center border-2 border-slate-600">
+                     <span className="text-2xl font-bold text-white font-mono">{num}</span>
+                     <div className="absolute -bottom-3 left-1 w-6 h-6 bg-black rounded-full border-2 border-gray-500"></div>
+                     <div className="absolute -bottom-3 right-1 w-6 h-6 bg-black rounded-full border-2 border-gray-500"></div>
+                 </div>
+            </div>
+        );
+
+        const Wagon = ({ label, val, target, type, update, color }) => {
+            const isCorrect = val === target;
+            return (
+                <div className="flex flex-col items-center gap-2">
+                    {/* 货物显示 */}
+                    <div className="h-24 w-16 flex flex-col-reverse items-center justify-start pb-1 relative">
+                        {/* 辅助线 */}
+                        <div className="absolute bottom-0 w-full border-t border-dashed border-white/20" style={{height: `${target * 10}px`}}></div>
+                        {Array.from({length: val}).map((_, i) => (
+                            <div key={i} className="w-8 h-2 bg-white/80 mb-0.5 rounded-sm animate-popIn"></div>
+                        ))}
+                    </div>
+
+                    <div className={`w-20 h-16 ${color} rounded-lg flex flex-col items-center justify-center shadow-lg relative transition-transform ${isCorrect ? 'scale-105 ring-2 ring-white' : ''}`}>
+                        <span className="text-2xl font-bold text-white drop-shadow-md">{val}</span>
+                        <span className="text-[10px] text-white/80 font-bold uppercase">{label}</span>
+                        <div className="absolute -bottom-3 left-2 w-5 h-5 bg-black rounded-full border-2 border-gray-500"></div>
+                        <div className="absolute -bottom-3 right-2 w-5 h-5 bg-black rounded-full border-2 border-gray-500"></div>
+                    </div>
+
+                    <div className="flex gap-1">
+                         <button onClick={() => update(type, -1)} className="w-8 h-8 bg-slate-700 text-white rounded hover:bg-slate-600">-</button>
+                         <button onClick={() => update(type, 1)} className="w-8 h-8 bg-white/20 text-white rounded hover:bg-white/30 border border-white/40">+</button>
+                    </div>
+                </div>
+            );
+        };
+
+
+        // --- 游戏组件 2: 泡泡抓捕 (单个面板) ---
+        const BubblePanel = ({ target, onFinish, resetToken }) => {
+             const [slots, setSlots] = useState([null, null, null]); // [百, 十, 个]
+             const [bubbles, setBubbles] = useState([]);
+             const [isFinished, setIsFinished] = useState(false);
+
+             const correctAns = useMemo(() => [
+                 Math.floor(target / 100) * 100,
+                 Math.floor((target % 100) / 10) * 10,
+                 target % 10
+             ], [target]);
+
+             useEffect(() => {
+                 setSlots([null, null, null]);
+                 setIsFinished(false);
+                 
+                 // 生成泡泡
+                 const distractors = [
+                     Math.floor(Math.random() * 9) * 100,
+                     Math.floor(Math.random() * 9) * 10,
+                     Math.floor(Math.random() * 9),
+                     correctAns[0] / 10,
+                     correctAns[1] * 10
+                 ].filter(n => !correctAns.includes(n));
+                 
+                 const all = [...correctAns, ...distractors].sort(() => Math.random() - 0.5);
+                 setBubbles(all.map((val, i) => ({ id: i, val, active: true })));
+
+             }, [resetToken, correctAns]);
+
+             useEffect(() => {
+                 if (!isFinished && slots[0] === correctAns[0] && slots[1] === correctAns[1] && slots[2] === correctAns[2]) {
+                     setIsFinished(true);
+                     onFinish();
+                 }
+             }, [slots, correctAns, isFinished, onFinish]);
+
+             const handleBubbleClick = (bubble) => {
+                 if (isFinished || !bubble.active) return;
+                 const emptyIdx = slots.findIndex(s => s === null);
+                 if (emptyIdx !== -1) {
+                     const newSlots = [...slots];
+                     newSlots[emptyIdx] = bubble.val;
+                     setSlots(newSlots);
+                     setBubbles(prev => prev.map(b => b.id === bubble.id ? {...b, active: false} : b));
+                 }
+             };
+
+             const handleSlotClick = (idx) => {
+                 if (isFinished || slots[idx] === null) return;
+                 const val = slots[idx];
+                 const newSlots = [...slots];
+                 newSlots[idx] = null;
+                 setSlots(newSlots);
+                 // Restore bubble
+                 setBubbles(prev => {
+                     let restored = false;
+                     return prev.map(b => {
+                         if (!restored && b.val === val && !b.active) {
+                             restored = true;
+                             return { ...b, active: true };
+                         }
+                         return b;
+                     });
+                 });
+             };
+
+             return (
+                 <div className="h-full flex flex-col items-center p-4">
+                     {isFinished && <Confetti />}
+                     
+                     <div className="flex items-center gap-2 mb-8 bg-slate-700/50 p-4 rounded-xl">
+                         <Slot val={slots[0]} label="百位" onClick={() => handleSlotClick(0)} color="text-blue-400" />
+                         <span className="text-slate-400 text-xl font-bold">+</span>
+                         <Slot val={slots[1]} label="十位" onClick={() => handleSlotClick(1)} color="text-yellow-400" />
+                         <span className="text-slate-400 text-xl font-bold">+</span>
+                         <Slot val={slots[2]} label="个位" onClick={() => handleSlotClick(2)} color="text-green-400" />
+                     </div>
+
+                     <div className="flex flex-wrap justify-center gap-3">
+                         {bubbles.map(b => (
+                             <button
+                                 key={b.id}
+                                 onClick={() => handleBubbleClick(b)}
+                                 className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold transition-all duration-300 ${b.active ? 'bg-white text-slate-900 shadow-lg hover:scale-110' : 'opacity-0 scale-0 pointer-events-none'}`}
+                             >
+                                 {b.val}
+                             </button>
+                         ))}
+                     </div>
+                 </div>
+             );
+        };
+
+        const Slot = ({ val, label, onClick, color }) => (
+            <button 
+                onClick={onClick}
+                className={`w-20 h-16 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all ${val !== null ? 'bg-slate-800 border-solid border-white/50' : 'border-slate-600'}`}
+            >
+                {val !== null ? (
+                    <span className={`text-2xl font-bold ${color}`}>{val}</span>
+                ) : (
+                    <span className="text-xs text-slate-500">{label}</span>
+                )}
+            </button>
+        );
+
+
+        // --- 主应用入口 ---
+        const App = () => {
+            const [view, setView] = useState('menu'); // menu, selector, game
+            const [gameType, setGameType] = useState(null); // train, bubble
+            
+            // 学生池状态
+            const [pool, setPool] = useState(generateStudentPool());
+            const [usedStudents, setUsedStudents] = useState([]);
+            const [currentStudents, setCurrentStudents] = useState([]);
+
+            // 初始抽签处理 (选2人)
+            const handleInitialSelection = (selected) => {
+                setCurrentStudents(selected);
+                const newPool = pool.filter(id => !selected.includes(id));
+                setPool(newPool);
+                setUsedStudents(selected);
+                setView('game');
+            };
+
+            // PK 轮转逻辑 (赢家留下，输家换新)
+            const handlePKRotation = (winnerSide) => {
+                // 确定赢家ID
+                const winnerIdx = winnerSide === 'left' ? 0 : 1;
+                const winnerId = currentStudents[winnerIdx];
+
+                // 准备新池子
+                let currentPool = [...pool];
+                // 如果池子空了，需要重置。重置规则：所有1-40，除了当前的赢家。
+                if (currentPool.length === 0) {
+                    alert("所有同学都轮过一轮了！现在重置题库，继续挑战！");
+                    const all = generateStudentPool();
+                    currentPool = all.filter(id => id !== winnerId);
+                    setUsedStudents([winnerId]); // 重新开始记录，赢家算已用
+                }
+
+                // 随机抽1个
+                const randIdx = Math.floor(Math.random() * currentPool.length);
+                const newStudentId = currentPool[randIdx];
+                
+                // 更新池子 (移除新选的人)
+                const nextPool = currentPool.filter(id => id !== newStudentId);
+                setPool(nextPool);
+                setUsedStudents(prev => [...prev, newStudentId]);
+
+                // 更新座位 (赢家不动，输家位置换人)
+                const nextStudents = [...currentStudents];
+                nextStudents[1 - winnerIdx] = newStudentId; // 1-0=1, 1-1=0. 巧妙切换索引
+                setCurrentStudents(nextStudents);
+            };
+
+            return (
+                <GameContainer>
+                    {view === 'menu' && (
+                        <div className="flex-1 flex flex-col items-center justify-center space-y-8 animate-fadeIn">
+                            <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-500 neon-text mb-8">
+                                数学大乱斗
+                            </h1>
+                            <div className="flex gap-8">
+                                <MenuCard 
+                                    title="数位分析" 
+                                    subtitle="Train Station"
+                                    icon={<Train size={64} />} 
+                                    color="from-blue-500 to-indigo-600"
+                                    onClick={() => { setGameType('train'); setView('selector'); }}
+                                />
+                                <MenuCard 
+                                    title="数值分析" 
+                                    subtitle="Bubble Popping"
+                                    icon={<Trophy size={64} />} 
+                                    color="from-purple-500 to-pink-600"
+                                    onClick={() => { setGameType('bubble'); setView('selector'); }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {view === 'selector' && (
+                        <StudentSelector 
+                            availableStudents={pool} 
+                            onStudentsSelected={handleInitialSelection}
+                            onBack={() => setView('menu')}
+                        />
+                    )}
+
+                    {view === 'game' && (
+                        <BattleArena 
+                            gameType={gameType}
+                            students={currentStudents}
+                            onNextRound={handlePKRotation}
+                            onExit={() => setView('menu')}
+                        />
+                    )}
+                </GameContainer>
+            );
+        };
+
+        const MenuCard = ({ title, subtitle, icon, color, onClick }) => (
+            <button 
+                onClick={onClick}
+                className={`w-64 h-80 rounded-3xl bg-gradient-to-br ${color} p-6 flex flex-col items-center justify-between text-white shadow-2xl hover:scale-105 transition-transform duration-300 border-4 border-white/10`}
+            >
+                <div className="flex-1 flex items-center justify-center drop-shadow-lg">
+                    {icon}
+                </div>
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold mb-1">{title}</h2>
+                    <p className="text-white/60 text-sm font-mono uppercase">{subtitle}</p>
+                </div>
+            </button>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

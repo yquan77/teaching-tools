@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>趣味数学：数位与数值分析 (基础练习版)</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- 引入 Babel 用于解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.3s ease-in-out;
+        }
+        /* 隐藏数字输入框的箭头 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="bg-blue-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- 图标组件 (SVG) ---
+        const Train = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="16" height="12" x="4" y="5" rx="2"/><path d="M15 2v3"/><path d="M9 2v3"/><path d="M14 17h1"/><path d="m5 17 2 5h10l2-5"/><circle cx="12" cy="12" r="2"/></svg>
+        );
+        const Calculator = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+        );
+        const Check = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>
+        );
+        const RefreshCw = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        );
+        const Star = ({size=24, className="", fill="none"}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        );
+        const Trophy = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        );
+        const ArrowRight = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        );
+
+        // --- 组件：烟花效果 (简化版) ---
+        const Confetti = () => (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden z-50 flex justify-center items-center">
+            <div className="animate-bounce text-4xl">🎉</div>
+            <div className="animate-pulse text-4xl delay-75 ml-4">⭐</div>
+            <div className="animate-bounce text-4xl delay-150 ml-4">✨</div>
+          </div>
+        );
+
+        // --- 工具 1: 数位分析 (小火车) ---
+        function PlaceValueGame() {
+          const [mode, setMode] = useState('learn'); // 'learn' or 'practice'
+          const [inputNum, setInputNum] = useState(385);
+          
+          const questions = [
+            { id: 1, num: 641, ans: { h: 6, t: 4, o: 1 } },
+            { id: 2, num: 297, ans: { h: 2, t: 9, o: 7 } }
+          ];
+          
+          const [currentQIndex, setCurrentQIndex] = useState(0);
+          const [userAns, setUserAns] = useState({ h: '', t: '', o: '' });
+          const [feedback, setFeedback] = useState(null); 
+
+          const handlePracticeCheck = () => {
+            const q = questions[currentQIndex];
+            if (
+              parseInt(userAns.h) === q.ans.h &&
+              parseInt(userAns.t) === q.ans.t &&
+              parseInt(userAns.o) === q.ans.o
+            ) {
+              setFeedback('correct');
+            } else {
+              setFeedback('incorrect');
+            }
+          };
+
+          const nextQuestion = () => {
+            if (currentQIndex < questions.length - 1) {
+              setCurrentQIndex(currentQIndex + 1);
+              setUserAns({ h: '', t: '', o: '' });
+              setFeedback(null);
+            }
+          };
+
+          const resetPractice = () => {
+            setCurrentQIndex(0);
+            setUserAns({ h: '', t: '', o: '' });
+            setFeedback(null);
+          };
+
+          return (
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 className="text-2xl font-bold text-orange-600 flex items-center gap-2">
+                  <Train /> 数位小火车
+                </h2>
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setMode('learn')}
+                    className={`px-4 py-1 rounded-md text-sm font-medium transition-colors ${
+                      mode === 'learn' ? 'bg-white shadow text-orange-600' : 'text-gray-500'
+                    }`}
+                  >
+                    学习演示
+                  </button>
+                  <button
+                    onClick={() => setMode('practice')}
+                    className={`px-4 py-1 rounded-md text-sm font-medium transition-colors ${
+                      mode === 'practice' ? 'bg-white shadow text-orange-600' : 'text-gray-500'
+                    }`}
+                  >
+                    做一做 (图片题目)
+                  </button>
+                </div>
+              </div>
+
+              {mode === 'learn' ? (
+                <div className="space-y-8 animate-fadeIn">
+                  <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                    <label className="block text-gray-700 font-bold mb-2">输入一个三位数来观察：</label>
+                    <input
+                      type="number"
+                      value={inputNum}
+                      onChange={(e) => {
+                        const val = Math.min(999, Math.max(0, parseInt(e.target.value) || 0));
+                        setInputNum(val);
+                      }}
+                      className="w-full text-3xl font-mono text-center p-2 border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  
+                  <TrainDisplay 
+                    number={inputNum} 
+                    hundreds={Math.floor(inputNum / 100) % 10}
+                    tens={Math.floor(inputNum / 10) % 10}
+                    ones={inputNum % 10}
+                    isInteractive={false}
+                  />
+                  
+                  <div className="text-center text-gray-500 mt-4">
+                    <p>数位分析是把数字拆分成：几个百、几个十、几个一。</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-8 animate-fadeIn relative">
+                  {feedback === 'correct' && <Confetti />}
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-bold">
+                      第 {currentQIndex + 1} / {questions.length} 题
+                    </span>
+                    <button onClick={resetPractice} className="text-gray-400 hover:text-gray-600">
+                      <RefreshCw size={18} />
+                    </button>
+                  </div>
+
+                  <div className="text-center mb-8">
+                    <p className="text-lg text-gray-700 mb-4">请根据车头的数字，填好车厢里的数位！</p>
+                    <TrainDisplay 
+                      number={questions[currentQIndex].num}
+                      hundreds={userAns.h}
+                      tens={userAns.t}
+                      ones={userAns.o}
+                      isInteractive={true}
+                      onInputChange={(type, val) => setUserAns(prev => ({...prev, [type]: val}))}
+                      isCorrect={feedback === 'correct'}
+                    />
+                  </div>
+
+                  <div className="flex justify-center gap-4">
+                     {feedback !== 'correct' ? (
+                      <button
+                        onClick={handlePracticeCheck}
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg transform transition active:scale-95 flex items-center gap-2"
+                      >
+                        <Check /> 检查答案
+                      </button>
+                     ) : (
+                       currentQIndex < questions.length - 1 ? (
+                        <button
+                          onClick={nextQuestion}
+                          className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg animate-pulse flex items-center gap-2"
+                        >
+                          下一题 <ArrowRight />
+                        </button>
+                       ) : (
+                         <div className="text-center">
+                           <div className="text-2xl font-bold text-orange-600 mb-2 flex items-center justify-center gap-2">
+                             <Trophy className="text-yellow-500" /> 太棒了！全部完成！
+                           </div>
+                           <button onClick={resetPractice} className="text-blue-500 underline">再玩一次</button>
+                         </div>
+                       )
+                     )}
+                  </div>
+                  
+                  {feedback === 'incorrect' && (
+                    <p className="text-center text-red-500 font-bold mt-4 animate-shake">
+                      不对哦，再试一试！看看车头的数字是几？
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        function TrainDisplay({ number, hundreds, tens, ones, isInteractive, onInputChange, isCorrect }) {
+          const inputClass = `w-16 h-12 text-center text-2xl font-bold border-b-4 bg-white rounded focus:outline-none transition-colors ${
+            isCorrect ? 'border-green-500 text-green-600 bg-green-50' : 'border-gray-300 focus:border-orange-400'
+          }`;
+
+          return (
+            <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-0 overflow-x-auto py-4">
+              <div className="relative flex-shrink-0">
+                <svg width="160" height="140" viewBox="0 0 160 140" className="drop-shadow-lg">
+                  <rect x="30" y="10" width="25" height="40" fill="#4B5563" />
+                  <path d="M20 10 L65 10 L65 0 L20 0 Z" fill="#374151" />
+                  <path d="M10 50 H110 V110 H10 Q0 110 0 100 V60 Q0 50 10 50" fill="#F97316" />
+                  <path d="M110 50 H150 Q160 50 160 60 V110 H110 V50" fill="#EA580C" />
+                  <rect x="10" y="50" width="150" height="10" fill="#9A3412" />
+                  <circle cx="40" cy="120" r="15" fill="#374151" stroke="#9CA3AF" strokeWidth="4" />
+                  <circle cx="90" cy="120" r="15" fill="#374151" stroke="#9CA3AF" strokeWidth="4" />
+                  <circle cx="135" cy="120" r="12" fill="#374151" stroke="#9CA3AF" strokeWidth="3" />
+                  <rect x="40" y="115" width="95" height="10" fill="#D1D5DB" rx="5" />
+                  <rect x="25" y="70" width="80" height="30" rx="5" fill="#FFF" stroke="#374151" strokeWidth="2" />
+                </svg>
+                <div className="absolute top-[72px] left-[25px] w-[80px] text-center text-2xl font-black text-gray-800 tracking-widest">
+                  {number}
+                </div>
+              </div>
+
+              <div className="w-8 h-4 bg-gray-400 flex-shrink-0 mx-[-5px] z-0 rounded md:rotate-0 rotate-90 my-[-5px] md:my-0"></div>
+
+              <Wagon label="个百" color="bg-blue-400" borderColor="border-blue-600">
+                {isInteractive ? (
+                  <input 
+                    type="number" 
+                    className={inputClass} 
+                    value={hundreds} 
+                    onChange={(e) => onInputChange('h', e.target.value)}
+                    disabled={isCorrect}
+                  />
+                ) : (
+                  <span className="text-3xl font-bold text-white">{hundreds}</span>
+                )}
+              </Wagon>
+
+              <div className="w-8 h-4 bg-gray-400 flex-shrink-0 mx-[-5px] z-0 rounded md:rotate-0 rotate-90 my-[-5px] md:my-0"></div>
+
+              <Wagon label="个十" color="bg-yellow-400" borderColor="border-yellow-600">
+                {isInteractive ? (
+                  <input 
+                    type="number" 
+                    className={inputClass} 
+                    value={tens} 
+                    onChange={(e) => onInputChange('t', e.target.value)}
+                    disabled={isCorrect}
+                  />
+                ) : (
+                  <span className="text-3xl font-bold text-white">{tens}</span>
+                )}
+              </Wagon>
+
+              <div className="w-8 h-4 bg-gray-400 flex-shrink-0 mx-[-5px] z-0 rounded md:rotate-0 rotate-90 my-[-5px] md:my-0"></div>
+
+              <Wagon label="个一" color="bg-green-400" borderColor="border-green-600">
+                {isInteractive ? (
+                  <input 
+                    type="number" 
+                    className={inputClass} 
+                    value={ones} 
+                    onChange={(e) => onInputChange('o', e.target.value)}
+                    disabled={isCorrect}
+                  />
+                ) : (
+                  <span className="text-3xl font-bold text-white">{ones}</span>
+                )}
+              </Wagon>
+            </div>
+          );
+        }
+
+        const Wagon = ({ children, label, color, borderColor }) => (
+          <div className={`relative w-32 h-28 ${color} rounded-lg border-b-8 ${borderColor} flex flex-col items-center justify-center shadow-md flex-shrink-0`}>
+            <div className="bg-white/20 w-28 h-16 rounded mb-1 flex items-center justify-center">
+              {children}
+            </div>
+            <div className="text-white font-bold text-lg">{label}</div>
+            <div className="absolute -bottom-4 left-4 w-6 h-6 bg-gray-700 rounded-full border-2 border-gray-400"></div>
+            <div className="absolute -bottom-4 right-4 w-6 h-6 bg-gray-700 rounded-full border-2 border-gray-400"></div>
+          </div>
+        );
+
+        // --- 工具 2: 数值分析 (拆拆乐) ---
+        function DigitValueGame() {
+          const [mode, setMode] = useState('learn');
+          const [learnNum, setLearnNum] = useState(234);
+
+          const questions = [
+            { id: 1, num: 682, ans: [600, 80, 2] },
+            { id: 2, num: 179, ans: [100, 70, 9] },
+            { id: 3, num: 309, ans: [300, 0, 9] } 
+          ];
+
+          const [currentQIndex, setCurrentQIndex] = useState(0);
+          const [inputs, setInputs] = useState(['', '', '']);
+          const [feedback, setFeedback] = useState(null);
+
+          const handleInputChange = (index, value) => {
+            const newInputs = [...inputs];
+            newInputs[index] = value;
+            setInputs(newInputs);
+            setFeedback(null); 
+          };
+
+          const checkAnswer = () => {
+            const currentQ = questions[currentQIndex];
+            const correctAns = currentQ.ans;
+            
+            const isCorrect = inputs.every((val, idx) => {
+              return parseInt(val) === correctAns[idx];
+            });
+
+            setFeedback(isCorrect ? 'correct' : 'incorrect');
+          };
+
+          const nextQuestion = () => {
+            if (currentQIndex < questions.length - 1) {
+              setCurrentQIndex(currentQIndex + 1);
+              setInputs(['', '', '']);
+              setFeedback(null);
+            }
+          };
+
+           const resetGame = () => {
+            setCurrentQIndex(0);
+            setInputs(['', '', '']);
+            setFeedback(null);
+          };
+
+          return (
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 className="text-2xl font-bold text-green-600 flex items-center gap-2">
+                  <Calculator /> 数值拆拆乐
+                </h2>
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setMode('learn')}
+                    className={`px-4 py-1 rounded-md text-sm font-medium transition-colors ${
+                      mode === 'learn' ? 'bg-white shadow text-green-600' : 'text-gray-500'
+                    }`}
+                  >
+                    学习演示
+                  </button>
+                  <button
+                    onClick={() => setMode('practice')}
+                    className={`px-4 py-1 rounded-md text-sm font-medium transition-colors ${
+                      mode === 'practice' ? 'bg-white shadow text-green-600' : 'text-gray-500'
+                    }`}
+                  >
+                    做一做 (图片题目)
+                  </button>
+                </div>
+              </div>
+
+              {mode === 'learn' ? (
+                <div className="flex flex-col items-center justify-center py-10 animate-fadeIn space-y-8">
+                  <div className="bg-green-50 p-6 rounded-2xl border-2 border-green-200 w-full max-w-md text-center">
+                     <label className="block text-gray-600 mb-2 font-bold">输入数字：</label>
+                     <input
+                      type="number"
+                      value={learnNum}
+                      onChange={(e) => setLearnNum(Math.min(999, Math.max(0, parseInt(e.target.value) || 0)))}
+                      className="text-4xl font-mono font-bold text-center w-full bg-transparent border-b-2 border-green-400 focus:outline-none"
+                     />
+                  </div>
+
+                  <div className="flex items-center gap-2 sm:gap-4 text-2xl sm:text-4xl font-bold text-gray-700 flex-wrap justify-center">
+                    <span className="text-blue-600">{learnNum}</span>
+                    <span>=</span>
+                    <div className="bg-blue-100 px-4 py-2 rounded-lg text-blue-600 border border-blue-300">
+                      {Math.floor(learnNum / 100) * 100}
+                    </div>
+                    <span>+</span>
+                    <div className="bg-yellow-100 px-4 py-2 rounded-lg text-yellow-600 border border-yellow-300">
+                      {Math.floor((learnNum % 100) / 10) * 10}
+                    </div>
+                    <span>+</span>
+                    <div className="bg-green-100 px-4 py-2 rounded-lg text-green-600 border border-green-300">
+                      {learnNum % 10}
+                    </div>
+                  </div>
+                  
+                  <div className="text-gray-500 text-sm mt-4 bg-gray-50 p-4 rounded-lg">
+                     <p>提示：数值分析就是把每个数字代表的值加起来。</p>
+                     <p>例如：2在百位就是200，3在十位就是30，4在个位就是4。</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center py-6 animate-fadeIn relative">
+                  {feedback === 'correct' && <Confetti />}
+                  
+                  <div className="w-full flex justify-between items-center mb-8">
+                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">
+                      第 {currentQIndex + 1} / {questions.length} 题
+                    </span>
+                    <button onClick={resetGame} className="text-gray-400 hover:text-gray-600">
+                      <RefreshCw size={18} />
+                    </button>
+                  </div>
+
+                  <div className="text-center mb-10 w-full">
+                    <p className="text-xl text-gray-700 mb-6 font-medium">填空完成数值分析：</p>
+                    
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-3xl font-bold">
+                       <div className="bg-gray-800 text-white px-6 py-3 rounded-xl shadow-lg">
+                         {questions[currentQIndex].num}
+                       </div>
+                       <span className="text-gray-400 text-4xl">=</span>
+                       
+                       <div className="flex items-center gap-2 flex-wrap justify-center">
+                         <ValueInput 
+                           value={inputs[0]} 
+                           onChange={(v) => handleInputChange(0, v)} 
+                           color="blue" 
+                           isCorrect={feedback === 'correct'}
+                           placeholder="?"
+                         />
+                         <span className="text-gray-400">+</span>
+                         <ValueInput 
+                           value={inputs[1]} 
+                           onChange={(v) => handleInputChange(1, v)} 
+                           color="yellow" 
+                           isCorrect={feedback === 'correct'}
+                           placeholder="?"
+                         />
+                         <span className="text-gray-400">+</span>
+                         <ValueInput 
+                           value={inputs[2]} 
+                           onChange={(v) => handleInputChange(2, v)} 
+                           color="green" 
+                           isCorrect={feedback === 'correct'}
+                           placeholder="?"
+                         />
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                     {feedback !== 'correct' ? (
+                        <button
+                          onClick={checkAnswer}
+                          className="bg-green-500 hover:bg-green-600 text-white px-10 py-3 rounded-full font-bold text-lg shadow-lg transform transition active:scale-95 flex items-center gap-2"
+                        >
+                          <Check /> 提交答案
+                        </button>
+                     ) : (
+                        currentQIndex < questions.length - 1 ? (
+                          <button
+                            onClick={nextQuestion}
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-10 py-3 rounded-full font-bold text-lg shadow-lg animate-pulse flex items-center gap-2"
+                          >
+                            下一题 <ArrowRight />
+                          </button>
+                        ) : (
+                           <div className="text-center">
+                             <div className="text-2xl font-bold text-green-600 mb-2 flex items-center gap-2">
+                               <Star className="text-yellow-500 fill-current" /> 完美通过！
+                             </div>
+                             <button onClick={resetGame} className="text-gray-500 underline text-sm">再试一次</button>
+                           </div>
+                        )
+                     )}
+                  </div>
+
+                  {feedback === 'incorrect' && (
+                     <div className="mt-6 bg-red-50 text-red-600 px-4 py-2 rounded-lg animate-bounce">
+                       哎呀！数值不对哦。记得百位是几百，十位是几十。
+                     </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        const ValueInput = ({ value, onChange, color, isCorrect, placeholder }) => {
+          const colorStyles = {
+            blue: 'border-blue-300 focus:border-blue-500 text-blue-700 bg-blue-50',
+            yellow: 'border-yellow-300 focus:border-yellow-500 text-yellow-700 bg-yellow-50',
+            green: 'border-green-300 focus:border-green-500 text-green-700 bg-green-50',
+          };
+
+          const style = isCorrect 
+            ? 'border-green-500 bg-green-100 text-green-700 scale-110' 
+            : colorStyles[color];
+
+          return (
+            <input
+              type="number"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={placeholder}
+              className={`w-24 h-16 text-center text-2xl font-bold border-2 rounded-xl transition-all duration-300 focus:outline-none focus:shadow-lg ${style}`}
+              readOnly={isCorrect}
+            />
+          );
+        };
+
+        // --- 主应用组件 ---
+        function App() {
+          const [activeTab, setActiveTab] = useState('placeValue');
+
+          return (
+            <div className="min-h-screen bg-blue-50 font-sans text-gray-800 p-4 sm:p-8">
+              <header className="max-w-4xl mx-auto mb-8 text-center">
+                <h1 className="text-3xl sm:text-4xl font-bold text-blue-600 mb-2">
+                  趣味数学：数位与数值
+                </h1>
+                <p className="text-gray-600">根据课本活动五设计的互动练习</p>
+              </header>
+
+              <div className="max-w-4xl mx-auto mb-6 flex justify-center gap-4">
+                <button
+                  onClick={() => setActiveTab('placeValue')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all shadow-md ${
+                    activeTab === 'placeValue'
+                      ? 'bg-orange-500 text-white scale-105 ring-4 ring-orange-200'
+                      : 'bg-white text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Train size={24} />
+                  A. 数位分析 (小火车)
+                </button>
+                <button
+                  onClick={() => setActiveTab('digitValue')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all shadow-md ${
+                    activeTab === 'digitValue'
+                      ? 'bg-green-500 text-white scale-105 ring-4 ring-green-200'
+                      : 'bg-white text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Calculator size={24} />
+                  B. 数值分析 (算式)
+                </button>
+              </div>
+
+              <main className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden min-h-[500px]">
+                {activeTab === 'placeValue' ? <PlaceValueGame /> : <DigitValueGame />}
+              </main>
+              
+              <footer className="text-center mt-8 text-gray-400 text-sm">
+                © 互动学习工具 | 帮助学生掌握数学概念
+              </footer>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
