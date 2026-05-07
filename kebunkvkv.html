@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kebun Pintar KVKV - Edisi Guru AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue-team: #3abff8;
+            --red-team: #f87272;
+            --grass-top: #bbf7d0;
+            --grass-bottom: #22c55e;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            overflow: hidden;
+            background: #a7f3d0;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            touch-action: manipulation;
+        }
+
+        /* 封面样式 */
+        #game-cover {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: linear-gradient(to bottom, #7dd3fc, #22c55e);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        .cover-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: clamp(3rem, 10vw, 5rem);
+            color: white;
+            text-shadow: 0 8px 0 #15803d, 0 15px 30px rgba(0,0,0,0.3);
+            margin-bottom: 2rem;
+            animation: bounce 2s infinite;
+        }
+
+        .start-btn {
+            background: #cbd5e1;
+            color: #64748b;
+            font-family: 'Fredoka One', cursive;
+            font-size: 2rem;
+            padding: 1.2rem 3rem;
+            border-radius: 50px;
+            border: 6px solid white;
+            box-shadow: 0 10px 0 #94a3b8;
+            cursor: not-allowed;
+            transition: all 0.2s;
+        }
+
+        .start-btn.ready {
+            background: #fbbf24;
+            color: #92400e;
+            box-shadow: 0 10px 0 #d97706;
+            cursor: pointer;
+        }
+
+        .garden-bg {
+            background: linear-gradient(to bottom, #7dd3fc 0%, #7dd3fc 30%, var(--grass-top) 30%, var(--grass-bottom) 100%);
+            position: relative;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .team-side {
+            flex: 1;
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 140px 20px 40px 20px;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .hole {
+            position: relative;
+            background: #451a03;
+            border-radius: 50% / 30%;
+            box-shadow: inset 0 15px 30px rgba(0,0,0,0.8), 0 5px 0 #78350f;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .mole {
+            position: relative;
+            bottom: -110%;
+            width: 85%;
+            height: 95%;
+            transition: bottom 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .mole.up { bottom: 0%; }
+
+        /* 地鼠 SVG：手举高 */
+        .mole-body {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.2));
+        }
+
+        /* 字卡位置：在地鼠手的上方 */
+        .word-tag {
+            position: absolute;
+            top: 5px; /* 移到最上方，手举着的地方 */
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 2px 10px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: clamp(0.8rem, 2.5vw, 1.1rem);
+            color: #1e3a8a;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 3px 0 #cbd5e1;
+            font-family: 'Fredoka One', cursive;
+            white-space: nowrap;
+            z-index: 30;
+            pointer-events: none;
+        }
+
+        .audio-controls {
+            position: absolute;
+            top: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-pill {
+            background: white;
+            padding: 6px 15px;
+            border-radius: 40px;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #e2e8f0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+        }
+
+        .score-board {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+        }
+
+        .score-card {
+            background: white;
+            padding: 5px 15px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 70px;
+        }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .floating-score { position: absolute; pointer-events: none; z-index: 1000; animation: popUp 0.8s ease-out forwards; }
+        @keyframes popUp { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-80px); } }
+    </style>
+</head>
+<body>
+
+    <div id="game-cover">
+        <h1 class="cover-title">KEBUN PINTAR<br>KVKV</h1>
+        <button id="start-btn" class="start-btn">MENYEDIAKAN...</button>
+        <div id="loader-status" class="mt-4 text-white font-bold bg-black/20 px-4 py-1 rounded-full text-sm">Sila tunggu, Guru sedang bersiap...</div>
+    </div>
+
+    <div class="garden-bg">
+        <div class="score-board">
+            <div class="score-card text-blue-500 border-2 border-blue-500">
+                <div class="text-[10px] font-bold">BIRU</div>
+                <div id="score-blue" class="text-xl font-bold">0</div>
+            </div>
+            <div class="score-card text-red-500 border-2 border-red-500">
+                <div class="text-[10px] font-bold">MERAH</div>
+                <div id="score-red" class="text-xl font-bold">0</div>
+            </div>
+        </div>
+
+        <div class="audio-controls">
+            <div class="btn-pill" onclick="speakTargetAI();">
+                <span>🔊</span> <span id="voice-label">Dengar</span>
+            </div>
+        </div>
+
+        <div class="flex h-full">
+            <div class="team-side" id="grid-blue" style="background: rgba(58, 191, 248, 0.05);">
+                <div class="hole"><div class="mole" onclick="whack(event, 'blue')"></div></div>
+                <div class="hole"><div class="mole" onclick="whack(event, 'blue')"></div></div>
+                <div class="hole"><div class="mole" onclick="whack(event, 'blue')"></div></div>
+                <div class="hole"><div class="mole" onclick="whack(event, 'blue')"></div></div>
+                <div class="hole"><div class="mole" onclick="whack(event, 'blue')"></div></div>
+                <div class="hole"><div class="mole" onclick="whack(event, 'blue')"></div></div>
+            </div>
+            <div class="team-side" id="grid-red" style="background: rgba(248, 114, 114, 0.05);">
+                <div class="hole"><div class="mole" onclick="whack(event, 'red')"></div></div>
+                <div class="hole"><div class="mole" onclick="whack(event, 'red')"></div></div>
+                <div class="hole"><div class="mole" onclick="whack(event, 'red')"></div></div>
+                <div class="hole"><div class="mole" onclick="whack(event, 'red')"></div></div>
+                <div class="hole"><div class="mole" onclick="whack(event, 'red')"></div></div>
+                <div class="hole"><div class="mole" onclick="whack(event, 'red')"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const words = ["buku", "sudu", "topi", "nasi", "cili", "bola", "siku", "dadu", "baju", "tali", "meja", "gigi", "bata", "bahu", "beca", "teko", "kopi", "roti"];
+        let currentTarget = "";
+        let scores = { blue: 0, red: 0 };
+        let isGameActive = false;
+        let audioCtx;
+        let voiceCache = {}; // 存储结构: { word: { type: 'ai'|'local', url: string|null } }
+        const apiKey = "AIzaSyAMMTm_pLY1te0JM-tmX_IgLmrqZJdAQlI"; 
+
+        // 地鼠 SVG 模板：手举高，字卡放在手部
+        const moleSVG = `
+            <svg class="mole-body" viewBox="0 0 100 100" preserveAspectRatio="xMidYMax meet">
+                <!-- 手举起 -->
+                <ellipse cx="25" cy="20" rx="8" ry="12" fill="#A0522D" />
+                <ellipse cx="75" cy="20" rx="8" ry="12" fill="#A0522D" />
+                <!-- 身体 -->
+                <ellipse cx="50" cy="70" rx="40" ry="45" fill="#A0522D" />
+                <ellipse cx="50" cy="80" rx="22" ry="25" fill="#DEB887" opacity="0.6" />
+                <!-- 脸部细节 -->
+                <circle cx="38" cy="55" r="4" fill="white" />
+                <circle cx="62" cy="55" r="4" fill="white" />
+                <circle cx="39" cy="54" r="1.5" fill="black" />
+                <circle cx="63" cy="54" r="1.5" fill="black" />
+                <ellipse cx="50" cy="62" rx="5" ry="3" fill="#333" />
+                <path d="M 46 68 Q 50 72 54 68" fill="none" stroke="#333" stroke-width="1.5" />
+            </svg>
+            <div class="word-tag"></div>
+        `;
+
+        function pcmToWav(base64, sampleRate) {
+            const buffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+            const wavHeader = new ArrayBuffer(44);
+            const view = new DataView(wavHeader);
+            const writeString = (offset, string) => { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); };
+            writeString(0, 'RIFF'); view.setUint32(4, 32 + buffer.byteLength, true); writeString(8, 'WAVE'); writeString(12, 'fmt ');
+            view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true); view.setUint16(34, 16, true); writeString(36, 'data'); view.setUint32(40, buffer.byteLength, true);
+            return new Blob([wavHeader, buffer], { type: 'audio/wav' });
+        }
+
+        // 语音获取：AI(男声 Enceladus), Local(女声)
+        async function fetchVoice(text, isRetry = false) {
+            // 如果已经是 AI，不需要再处理
+            if (voiceCache[text] && voiceCache[text].type === 'ai') return voiceCache[text];
+
+            const modelId = "gemini-2.5-flash-preview-tts";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ 
+                            parts: [{ text: `Sebutkan perkataan "${text}" dengan suara seorang guru lelaki yang sangat rasmi, tenang, perlahan dan jelas. Pastikan sebutan yang sempurna tanpa sebarang gaya hiasan.` }] 
+                        }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Enceladus" } } } // 男声
+                        }
+                    })
+                });
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                if (part?.inlineData?.data) {
+                    const rate = parseInt(part.inlineData.mimeType.match(/rate=(\d+)/)?.[1] || "24000");
+                    const blob = pcmToWav(part.inlineData.data, rate);
+                    const audioUrl = URL.createObjectURL(blob);
+                    voiceCache[text] = { type: 'ai', url: audioUrl };
+                    return voiceCache[text];
+                }
+            } catch (e) {
+                if (!isRetry) console.warn(`Gagal memuat suara AI untuk "${text}", menggunakan mod lokal.`);
+            }
+            
+            // 初次加载失败记录为 local
+            if (!voiceCache[text]) voiceCache[text] = { type: 'local', url: null };
+            return voiceCache[text];
+        }
+
+        // 后台重连机制：每 5 秒检查是否有 local 语音，尝试升级为 AI
+        async function startBackgroundVoiceUpdater() {
+            setInterval(async () => {
+                const localWords = Object.keys(voiceCache).filter(w => voiceCache[w].type === 'local');
+                if (localWords.length === 0) return;
+
+                // 每次尝试更新一个
+                const wordToUpdate = localWords[0];
+                console.log(`Cuba menaik taraf suara untuk: ${wordToUpdate}`);
+                const result = await fetchVoice(wordToUpdate, true);
+                if (result.type === 'ai') {
+                    console.log(`Berhasil! Suara AI untuk "${wordToUpdate}" kini tersedia.`);
+                }
+            }, 5000); 
+        }
+
+        async function speakTargetAI() {
+            const voice = voiceCache[currentTarget];
+            if (!voice || voice.type === 'local') {
+                const msg = new SpeechSynthesisUtterance(currentTarget);
+                msg.lang = 'ms-MY';
+                msg.pitch = 1.2; // 默认女生音调
+                msg.rate = 0.7; // 较慢语速
+                window.speechSynthesis.speak(msg);
+                document.getElementById('voice-label').innerText = "Dengar (Lokal ♀)";
+            } else {
+                const audio = new Audio(voice.url);
+                audio.play();
+                document.getElementById('voice-label').innerText = "Dengar (AI ♂)";
+            }
+        }
+
+        function startAmbientSound() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.03;
+            gain.connect(audioCtx.destination);
+
+            setInterval(() => {
+                if (!isGameActive) return;
+                const osc = audioCtx.createOscillator();
+                osc.frequency.setValueAtTime(1200 + Math.random() * 800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(2500, audioCtx.currentTime + 0.1);
+                const g = audioCtx.createGain();
+                g.gain.setValueAtTime(0.01, audioCtx.currentTime);
+                g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+                osc.connect(g); g.connect(gain);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            }, 4000);
+        }
+
+        document.querySelectorAll('.mole').forEach(m => m.innerHTML = moleSVG);
+
+        window.onload = async () => {
+            const btn = document.getElementById('start-btn');
+            const status = document.getElementById('loader-status');
+            for (let i = 0; i < words.length; i++) {
+                status.innerText = `Menyediakan Suara (${i+1}/${words.length})`;
+                await fetchVoice(words[i]);
+                await new Promise(r => setTimeout(r, 200)); 
+            }
+            btn.innerText = "MULA";
+            btn.classList.add('ready');
+            btn.onclick = () => {
+                document.getElementById('game-cover').style.transform = 'translateY(-100%)';
+                isGameActive = true;
+                startAmbientSound();
+                startBackgroundVoiceUpdater(); // 启动后台重连
+                nextRound();
+                setInterval(gameLoop, 3800);
+            };
+        };
+
+        function nextRound() {
+            currentTarget = words[Math.floor(Math.random() * words.length)];
+            speakTargetAI();
+        }
+
+        function gameLoop() {
+            if (!isGameActive) return;
+            document.querySelectorAll('.mole').forEach(m => m.classList.remove('up'));
+            setTimeout(() => {
+                ['blue', 'red'].forEach(team => {
+                    const moles = document.querySelectorAll(`#grid-${team} .mole`);
+                    const correctIdx = Math.floor(Math.random() * moles.length);
+                    moles.forEach((mole, idx) => {
+                        const word = idx === correctIdx ? currentTarget : words[Math.floor(Math.random() * words.length)];
+                        mole.querySelector('.word-tag').innerText = word;
+                        mole.dataset.word = word;
+                        setTimeout(() => mole.classList.add('up'), Math.random() * 800);
+                    });
+                });
+            }, 600);
+        }
+
+        function whack(e, team) {
+            if (!isGameActive) return;
+            const mole = e.currentTarget;
+            if (!mole.classList.contains('up')) return;
+            mole.classList.remove('up');
+
+            if (mole.dataset.word === currentTarget) {
+                scores[team] += 20;
+                showFloatingText("+20", e.pageX, e.pageY, "#22c55e");
+                nextRound();
+            } else {
+                scores[team] = Math.max(0, scores[team] - 10);
+                showFloatingText("-10", e.pageX, e.pageY, "#ef4444");
+            }
+            document.getElementById(`score-${team}`).innerText = scores[team];
+        }
+
+        function showFloatingText(text, x, y, color) {
+            const el = document.createElement('div');
+            el.className = 'floating-score font-bold text-2xl';
+            el.innerText = text; el.style.left = `${x}px`; el.style.top = `${y}px`; el.style.color = color;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+    </script>
+</body>
+</html>
