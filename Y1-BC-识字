@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>一年级识字大挑战</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/pinyin-pro@3.16.4/dist/index.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
+        
+        /* 强制防止左右滑动 */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            background: #020617;
+            color: white;
+            touch-action: manipulation; 
+        }
+
+        .font-game { font-family: 'ZCOOL KuaiLe', cursive; }
+
+        .evolve-bg {
+            animation: pulseBg 2s infinite alternate;
+        }
+        @keyframes pulseBg {
+            from { background-color: #020617; }
+            to { background-color: #3b0707; }
+        }
+
+        .panel-transition {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .active-red { box-shadow: inset 0 0 150px rgba(239, 68, 68, 0.3); opacity: 1 !important; z-index: 20;}
+        .active-blue { box-shadow: inset 0 0 150px rgba(59, 130, 246, 0.3); opacity: 1 !important; z-index: 20;}
+        .inactive-panel { opacity: 0.2; filter: grayscale(50%); pointer-events: none;}
+
+        .score-pop {
+            animation: scorePop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes scorePop {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            70% { transform: translateY(-80px) scale(1.5); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1); opacity: 0; }
+        }
+
+        .card-flip {
+            animation: flipIn 0.3s ease-out forwards;
+        }
+        @keyframes flipIn {
+            0% { transform: rotateX(90deg); opacity: 0; }
+            100% { transform: rotateX(0deg); opacity: 1; }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            animation: fall linear forwards;
+            z-index: 100;
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+
+        @keyframes zoomInOver {
+            0% { opacity: 0; transform: scale(0.3); }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-zoom-in {
+            animation: zoomInOver 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        
+        @keyframes spinSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spinSlow 20s linear infinite;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+
+        .btn-press { transition: transform 0.1s; }
+        .btn-press:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <!-- HTML5 原生背景音乐容器 -->
+    <div id="audio-bank" style="display: none;">
+        <audio id="bgm-lobby" src="https://assets.mixkit.co/music/preview/mixkit-games-world-beat-464.mp3" loop></audio>
+        <audio id="bgm-flashcard" src="https://assets.mixkit.co/music/preview/mixkit-just-chill-16.mp3" loop></audio>
+        <audio id="bgm-pk" src="https://assets.mixkit.co/music/preview/mixkit-mighty-retro-puzzle-game-level-1-294.mp3" loop></audio>
+    </div>
+
+    <!-- 全局 BGM 音乐开关 -->
+    <button id="bgm-btn" onclick="toggleAudio(event)" class="btn-press absolute top-6 right-8 z-[300] bg-slate-800/80 p-4 rounded-full text-4xl shadow-lg border-2 border-slate-600 transition-all hover:scale-110">
+        🎵
+    </button>
+
+    <div id="app" class="h-screen w-screen max-w-[100vw] overflow-x-hidden flex flex-col relative">
+        
+        <!-- 1. 首页 -->
+        <div id="view-landing" class="flex-1 flex flex-col items-center justify-center p-8 text-center z-10 relative">
+            <h1 class="text-[7vw] font-black mb-16 bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500 font-game italic drop-shadow-2xl">识字大对决</h1>
+            <div class="flex flex-row gap-10 w-full max-w-5xl">
+                <!-- 第一次点击这里就会自动激活音乐！ -->
+                <button onclick="selectMode('flashcard')" class="btn-press flex-1 bg-slate-800/80 border-2 border-slate-600 p-10 rounded-[3rem] shadow-2xl hover:border-green-400 group backdrop-blur-md">
+                    <div class="text-[5vw] mb-6 group-hover:scale-110 transition-transform">📇</div>
+                    <h2 class="text-4xl font-bold mb-4 text-green-400 font-game">闪卡认读</h2>
+                    <p class="text-slate-300 text-lg">生成拼音闪卡，夯实基础</p>
+                </button>
+                <button onclick="selectMode('pk')" class="btn-press flex-1 bg-slate-800/80 border-2 border-slate-600 p-10 rounded-[3rem] shadow-2xl hover:border-yellow-400 group backdrop-blur-md">
+                    <div class="text-[5vw] mb-6 group-hover:scale-110 transition-transform">⚔️</div>
+                    <h2 class="text-4xl font-bold mb-4 text-yellow-400 font-game">PK 进化赛</h2>
+                    <p class="text-slate-300 text-lg">两班对抗，随机抽查</p>
+                </button>
+            </div>
+            
+            <div class="absolute bottom-6 text-slate-500 text-sm max-w-4xl text-center px-4 bg-slate-900/50 p-3 rounded-2xl border border-slate-700/50">
+                💡 <b>声音提示：</b>点击以上任意按钮，音乐和纯代码合成音效将瞬间激活，告别拦截烦恼！
+            </div>
+        </div>
+
+        <!-- 3. PK 配置 -->
+        <div id="view-pk-setup" class="hidden flex-1 flex flex-col items-center justify-center p-6 z-10">
+            <div class="bg-slate-900/90 border border-slate-700 w-full max-w-6xl rounded-[3rem] p-10 overflow-y-auto max-h-[95vh] custom-scrollbar">
+                <h2 class="text-[3vw] font-black mb-2 text-center italic font-game text-yellow-400">设置出战名单</h2>
+                <p class="text-center text-slate-300 text-lg mb-8">点击号码<b>打叉</b>标记缺席学生，系统会自动平衡两队轮流次数</p>
+                
+                <div class="grid grid-cols-2 gap-10">
+                    <div class="bg-red-950/40 p-6 rounded-[2rem] border-2 border-red-900/50">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-3xl font-black text-red-500 font-game">红组总人数</h3>
+                            <input type="number" id="red-count" value="30" min="1" max="60" class="w-32 bg-slate-900 p-3 rounded-xl text-center text-3xl font-bold border-2 border-red-500/50 text-white outline-none">
+                        </div>
+                        <div id="red-absent-grid" class="grid grid-cols-6 gap-3"></div>
+                    </div>
+                    <div class="bg-blue-950/40 p-6 rounded-[2rem] border-2 border-blue-900/50">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-3xl font-black text-blue-500 font-game">蓝组总人数</h3>
+                            <input type="number" id="blue-count" value="30" min="1" max="60" class="w-32 bg-slate-900 p-3 rounded-xl text-center text-3xl font-bold border-2 border-blue-500/50 text-white outline-none">
+                        </div>
+                        <div id="blue-absent-grid" class="grid grid-cols-6 gap-3"></div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-4 mt-10">
+                    <button onclick="switchView('landing')" class="btn-press px-10 bg-slate-700 rounded-3xl text-2xl font-bold text-white">返回大厅</button>
+                    <button onclick="switchView('unit-select')" class="btn-press flex-1 py-5 bg-white text-slate-900 rounded-3xl text-4xl font-black shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:bg-slate-200 transition-colors font-game">下一步：选择词库</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 单元选择 -->
+        <div id="view-unit-select" class="hidden flex-1 flex flex-col items-center justify-center p-6 z-10">
+            <div class="bg-slate-900/90 border border-slate-700 w-full max-w-6xl rounded-[3rem] shadow-2xl p-10 flex flex-col h-[85vh]">
+                <h2 class="text-3xl font-black mb-6 text-center text-white">选择要学习/比赛的单元</h2>
+                <div id="unit-grid" class="flex-1 overflow-y-auto grid grid-cols-5 gap-4 p-2 custom-scrollbar"></div>
+                <div class="mt-8 flex gap-6">
+                    <button onclick="confirmUnits()" class="btn-press flex-1 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl text-3xl font-bold shadow-xl text-white font-game">开启对决 / 开始认读</button>
+                    <button onclick="goBackFromUnitSelect()" class="btn-press px-12 bg-slate-700 rounded-2xl text-2xl font-bold text-white hover:bg-slate-600">返回</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 闪卡模式 -->
+        <div id="view-flashcard" class="hidden flex-1 flex flex-col items-center justify-center p-6 z-10 w-full relative">
+            <button onclick="switchView('unit-select')" class="btn-press absolute top-8 left-8 px-6 py-3 bg-slate-800 rounded-xl font-bold text-lg hover:bg-slate-700 text-white z-50">← 退出</button>
+            
+            <div id="fc-click-area" class="w-full flex-1 flex flex-col items-center justify-center cursor-pointer" onclick="nextFlashcard()">
+                <div id="fc-card" class="bg-white rounded-[4rem] flex flex-col items-center justify-center shadow-[0_20px_60px_rgba(255,255,255,0.1)] border-8 border-slate-200" style="width: 65vw; height: 60vh;">
+                    <div id="fc-pinyin" class="text-slate-500 font-bold mb-6 tracking-widest font-sans" style="font-size: 4.5vw;">pīn yīn</div>
+                    <div id="fc-word" class="font-black text-slate-900 leading-none" style="font-size: 13vw;">词汇</div>
+                </div>
+                <div class="mt-8 text-lg font-bold text-slate-400 bg-slate-800/80 px-6 py-2 rounded-full">
+                    点击屏幕任意处切换下一个 (<span id="fc-progress" class="text-white">0/0</span>)
+                </div>
+            </div>
+
+            <div id="fc-finish" class="hidden absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-[200] backdrop-blur-2xl overflow-hidden">
+                <div class="absolute inset-0 flex items-center justify-center opacity-40 animate-spin-slow pointer-events-none">
+                    <div class="w-[100%] h-[100%] bg-[conic-gradient(from_0deg,transparent_0_300deg,white_360deg)] rounded-full blur-[80px] scale-[1.5]"></div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center opacity-60 animate-pulse pointer-events-none">
+                    <div class="w-[80%] h-[80%] bg-yellow-500/40 rounded-full blur-[120px]"></div>
+                </div>
+                <div class="absolute top-32 left-32 text-7xl animate-bounce" style="animation-delay: 0.1s">⭐</div>
+                <div class="absolute bottom-32 right-32 text-8xl animate-bounce" style="animation-delay: 0.4s">🌟</div>
+                <div class="absolute top-1/4 right-40 text-6xl animate-pulse">✨</div>
+                <div class="absolute bottom-1/4 left-40 text-7xl animate-pulse" style="animation-delay: 0.3s">🎊</div>
+
+                <div class="relative z-10 flex flex-col items-center animate-zoom-in">
+                    <div class="relative mb-10">
+                        <div class="absolute inset-0 bg-white/50 rounded-full blur-3xl opacity-80 animate-pulse"></div>
+                        <div class="text-[10vw] leading-none animate-bounce drop-shadow-[0_0_80px_rgba(255,255,255,1)] relative z-10 hover:scale-110 transition-transform cursor-pointer">🎉</div>
+                    </div>
+                    <h2 class="text-[5vw] font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-400 to-green-400 mb-16 font-game drop-shadow-[0_20px_50px_rgba(251,191,36,0.6)]">绝杀！全部读完！</h2>
+                    <div class="flex gap-8">
+                        <button onclick="shuffleAndRestartFlashcard()" class="btn-press px-12 py-6 bg-gradient-to-b from-green-400 to-green-600 text-white rounded-full text-4xl font-black shadow-[0_20px_60px_rgba(34,197,94,0.8)] border-4 border-white hover:scale-105 transition-all font-game">乱序再战 ⚔️</button>
+                        <button onclick="switchView('unit-select')" class="btn-press px-12 py-6 bg-slate-800 text-white rounded-full text-4xl font-black shadow-[0_20px_60px_rgba(0,0,0,0.8)] border-4 border-slate-500 hover:scale-105 transition-all font-game hover:bg-slate-700">换新词库 📚</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. PK 赛倒数预热 -->
+        <div id="view-pk-countdown" class="hidden absolute inset-0 bg-slate-900 flex items-center justify-center z-[100]">
+            <div id="pk-countdown-num" class="text-[25rem] font-black text-white font-game drop-shadow-[0_0_100px_rgba(255,255,255,0.8)]">5</div>
+        </div>
+
+        <!-- 6. PK 战场 -->
+        <div id="view-pk-game" class="hidden flex-1 flex relative overflow-hidden">
+            <div class="absolute top-4 inset-x-0 z-50 pointer-events-none flex flex-col items-center w-full">
+                <button onclick="switchView('landing')" class="btn-press pointer-events-auto absolute left-6 top-0 px-5 py-2 bg-slate-800 rounded-xl font-bold text-white hover:bg-slate-700 shadow-lg border border-slate-600 transition-colors z-[60] text-sm">
+                    ← 返回大厅
+                </button>
+                <div id="round-label" class="bg-slate-900/95 px-8 py-2 rounded-full border-2 border-slate-600 text-2xl font-bold mb-2 shadow-2xl">
+                    第 <span id="round-display" class="text-yellow-400 text-3xl">1</span> 轮 / 共 <span id="max-round-display">--</span> 轮
+                </div>
+                <div id="speed-warning" class="hidden bg-red-600 text-white px-6 py-1.5 rounded-full font-black text-2xl italic animate-bounce shadow-[0_0_30px_rgba(239,68,68,0.8)] border-2 border-white">
+                    🔥 进化阶段：速度加快，得分双倍！ 🔥
+                </div>
+            </div>
+
+            <!-- 红组 -->
+            <div id="panel-red" class="flex-1 flex flex-col panel-transition relative z-10 border-r-4 border-slate-800">
+                <div class="p-8 pt-20 bg-red-600/10">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex flex-col">
+                            <span class="text-4xl font-black text-red-500 font-game mb-3">红组</span>
+                            <button onclick="manualScore('red', -5)" class="btn-press px-4 py-2 bg-red-900/60 hover:bg-red-600 text-white text-lg font-bold rounded-lg border border-red-500 transition-all pointer-events-auto">犯规 -5</button>
+                        </div>
+                        <div class="text-[6rem] leading-none font-black text-white tabular-nums drop-shadow-lg" id="score-red">0</div>
+                    </div>
+                    <div id="timer-container-red" class="invisible mt-6">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-red-400 font-bold text-xl">响应倒计时</span>
+                            <span id="timer-num-red" class="text-5xl font-black text-red-500 font-game">7</span>
+                        </div>
+                        <div class="h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                            <div id="timer-bar-red" class="h-full bg-gradient-to-r from-red-600 to-red-400 w-full transition-all duration-1000 ease-linear"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center p-6 pb-32 relative w-full">
+                    <div id="lottery-red" class="text-center flex flex-col items-center justify-center w-full">
+                        <div class="text-slate-400 text-3xl mb-4 font-bold opacity-0 transition-opacity" id="label-red">准备点名...</div>
+                        <div class="text-[14rem] font-black leading-none font-game text-red-500 drop-shadow-[0_0_50px_rgba(239,68,68,0.5)]" id="num-red">--</div>
+                    </div>
+                    <div id="card-red" class="hidden bg-white rounded-[3rem] flex flex-col items-center justify-center text-center shadow-[0_30px_100px_rgba(239,68,68,0.4)] border-8 border-red-500 overflow-hidden" style="width: 32vw; height: 35vh;">
+                        <div class="text-slate-500 font-bold mb-3 font-sans tracking-widest" id="pinyin-red" style="font-size: 3vw;">--</div>
+                        <div class="font-black text-slate-900 leading-tight whitespace-nowrap transition-all" id="word-red" style="font-size: 6vw;">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 蓝组 -->
+            <div id="panel-blue" class="flex-1 flex flex-col panel-transition relative z-10">
+                <div class="p-8 pt-20 bg-blue-600/10">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-[6rem] leading-none font-black text-white tabular-nums drop-shadow-lg" id="score-blue">0</div>
+                        <div class="flex flex-col items-end">
+                            <span class="text-4xl font-black text-blue-500 font-game mb-3">蓝组</span>
+                            <button onclick="manualScore('blue', -5)" class="btn-press px-4 py-2 bg-blue-900/60 hover:bg-blue-600 text-white text-lg font-bold rounded-lg border border-blue-500 transition-all pointer-events-auto">犯规 -5</button>
+                        </div>
+                    </div>
+                    <div id="timer-container-blue" class="invisible mt-6 text-right">
+                        <div class="flex justify-between items-end mb-2">
+                            <span id="timer-num-blue" class="text-5xl font-black text-blue-500 font-game">7</span>
+                            <span class="text-blue-400 font-bold text-xl">响应倒计时</span>
+                        </div>
+                        <div class="h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                            <div id="timer-bar-blue" class="h-full bg-gradient-to-l from-blue-400 to-blue-600 w-full transition-all duration-1000 ease-linear float-right"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center p-6 pb-32 relative w-full">
+                    <div id="lottery-blue" class="text-center flex flex-col items-center justify-center w-full">
+                        <div class="text-slate-400 text-3xl mb-4 font-bold opacity-0 transition-opacity" id="label-blue">准备点名...</div>
+                        <div class="text-[14rem] font-black leading-none font-game text-blue-500 drop-shadow-[0_0_50px_rgba(59,130,246,0.5)]" id="num-blue">--</div>
+                    </div>
+                    <div id="card-blue" class="hidden bg-white rounded-[3rem] flex flex-col items-center justify-center text-center shadow-[0_30px_100px_rgba(59,130,246,0.4)] border-8 border-blue-500 overflow-hidden" style="width: 32vw; height: 35vh;">
+                        <div class="text-slate-500 font-bold mb-3 font-sans tracking-widest" id="pinyin-blue" style="font-size: 3vw;">--</div>
+                        <div class="font-black text-slate-900 leading-tight whitespace-nowrap transition-all" id="word-blue" style="font-size: 6vw;">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 控制区 -->
+            <div class="absolute inset-x-0 bottom-6 pointer-events-none flex flex-col items-center z-[60]">
+                <button id="btn-correct" onclick="processResult(true)" class="btn-press hidden pointer-events-auto bg-gradient-to-b from-green-400 to-green-600 text-white rounded-full font-black shadow-[0_15px_40px_rgba(34,197,94,0.6)] border-4 border-white font-game flex items-center justify-center" style="width: 20rem; height: 6rem; font-size: 2.5rem;">
+                    答对 +分 ✓
+                </button>
+            </div>
+        </div>
+
+        <!-- 7. 最终结算 -->
+        <div id="view-result" class="hidden absolute inset-0 bg-slate-900/98 z-[100] flex flex-col items-center justify-center p-10 backdrop-blur-xl">
+            <h2 class="text-5xl font-black mb-12 text-slate-400 font-game tracking-widest">战况结算</h2>
+            <div class="flex gap-24 items-end mb-16 w-full max-w-5xl justify-center">
+                <div class="text-center group flex-1">
+                    <div class="text-red-500 text-4xl font-bold mb-6 group-hover:scale-110 transition-transform font-game">红组</div>
+                    <div id="final-score-red" class="text-[12vw] font-black text-white leading-none drop-shadow-[0_0_40px_rgba(239,68,68,0.5)]">0</div>
+                </div>
+                <div class="text-[6vw] font-bold text-slate-600 pb-8 italic font-game">VS</div>
+                <div class="text-center group flex-1">
+                    <div class="text-blue-500 text-4xl font-bold mb-6 group-hover:scale-110 transition-transform font-game">蓝组</div>
+                    <div id="final-score-blue" class="text-[12vw] font-black text-white leading-none drop-shadow-[0_0_40px_rgba(59,130,246,0.5)]">0</div>
+                </div>
+            </div>
+            <div id="winner-announcement" class="text-[6vw] font-black bg-clip-text text-transparent bg-gradient-to-b from-yellow-300 via-amber-500 to-orange-600 mb-12 font-game drop-shadow-[0_10px_30px_rgba(251,191,36,0.5)]">
+                --
+            </div>
+            <div class="flex flex-wrap justify-center gap-6">
+                <button onclick="startPKCountdown()" class="btn-press px-8 py-5 bg-green-500 text-white rounded-full text-3xl font-black hover:bg-green-400 transition-colors shadow-2xl">原班人马 再战</button>
+                <button onclick="switchView('unit-select')" class="btn-press px-8 py-5 bg-slate-700 text-white rounded-full text-3xl font-black hover:bg-slate-600 transition-colors shadow-2xl">重选词库</button>
+                <button onclick="switchView('landing')" class="btn-press px-8 py-5 bg-slate-900 border-2 border-slate-700 text-slate-300 rounded-full text-3xl font-black hover:bg-slate-800 transition-colors shadow-2xl">返回大厅</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ==========================================
+        // 终极音频引擎：代码合成(SFX) + HTML5(BGM)
+        // 彻底解决防盗链和移动端浏览器拦截问题
+        // ==========================================
+        let isAudioMuted = false;
+        let audioCtx = null;
+        let currentBGM = 'bgm-lobby'; 
+        let audioUnlocked = false;
+
+        const bgms = {
+            'bgm-lobby': document.getElementById('bgm-lobby'),
+            'bgm-flashcard': document.getElementById('bgm-flashcard'),
+            'bgm-pk': document.getElementById('bgm-pk')
+        };
+
+        Object.values(bgms).forEach(a => {
+            a.volume = 0.25;
+        });
+
+        // 1. 初始化纯代码发声引擎
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            // 第一次点击解锁所有 HTML5 音乐标签
+            if (!audioUnlocked) {
+                audioUnlocked = true;
+                if (!isAudioMuted && bgms[currentBGM]) {
+                    bgms[currentBGM].play().catch(e => console.log('音乐等待再次点击激活'));
+                }
+            }
+        }
+
+        // 2. 网页端最强纯代码音效合成器 (100%零延迟，无需下载)
+        function playSynthSfx(type) {
+            if (isAudioMuted || !audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            switch(type) {
+                case 'click': // 清脆滴声
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, t);
+                    gain.gain.setValueAtTime(0.1, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                    osc.start(t); osc.stop(t + 0.1);
+                    break;
+                case 'flip': // 翻卡短促滑音
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, t);
+                    osc.frequency.exponentialRampToValueAtTime(800, t + 0.1);
+                    gain.gain.setValueAtTime(0.1, t);
+                    gain.gain.linearRampToValueAtTime(0.01, t + 0.1);
+                    osc.start(t); osc.stop(t + 0.1);
+                    break;
+                case 'correct': // 答对上升音效 (C5-E5-G5)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, t);
+                    osc.frequency.setValueAtTime(659.25, t + 0.1);
+                    osc.frequency.setValueAtTime(783.99, t + 0.2);
+                    gain.gain.setValueAtTime(0.15, t);
+                    gain.gain.linearRampToValueAtTime(0, t + 0.4);
+                    osc.start(t); osc.stop(t + 0.4);
+                    break;
+                case 'wrong': // 答错/没反应下降音效
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, t);
+                    osc.frequency.linearRampToValueAtTime(100, t + 0.3);
+                    gain.gain.setValueAtTime(0.15, t);
+                    gain.gain.linearRampToValueAtTime(0, t + 0.3);
+                    osc.start(t); osc.stop(t + 0.3);
+                    break;
+                case 'pkStart': // PK震撼开局
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(150, t);
+                    osc.frequency.exponentialRampToValueAtTime(50, t + 0.8);
+                    gain.gain.setValueAtTime(0.2, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
+                    osc.start(t); osc.stop(t + 0.8);
+                    break;
+                case 'evolve': // 进化警报音
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, t);
+                    osc.frequency.linearRampToValueAtTime(1200, t + 0.8);
+                    gain.gain.setValueAtTime(0.15, t);
+                    gain.gain.linearRampToValueAtTime(0, t + 0.8);
+                    osc.start(t); osc.stop(t + 0.8);
+                    break;
+                case 'victory': // 胜利号角
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.type = 'square';
+                        o.frequency.value = freq;
+                        g.gain.setValueAtTime(0.1, t + i*0.15);
+                        g.gain.exponentialRampToValueAtTime(0.01, t + (i+1)*0.15);
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.start(t + i*0.15); o.stop(t + (i+1)*0.15);
+                    });
+                    break;
+                case 'tick': // 短促倒数/滚动音
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800 + Math.random()*200, t);
+                    gain.gain.setValueAtTime(0.05, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                    osc.start(t); osc.stop(t + 0.05);
+                    break;
+                case 'ding': // 确认高音
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1000, t);
+                    gain.gain.setValueAtTime(0.1, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                    osc.start(t); osc.stop(t + 0.3);
+                    break;
+            }
+        }
+
+        // 3. 切换背景音乐
+        function switchBGM(trackName) {
+            Object.values(bgms).forEach(a => a.pause());
+            currentBGM = trackName;
+            if (!isAudioMuted && audioUnlocked) {
+                bgms[currentBGM].play().catch(e => {});
+            }
+        }
+
+        // 4. 右上角音量控制
+        function toggleAudio(event) {
+            if (event) event.stopPropagation(); 
+            
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('bgm-btn');
+            if (isAudioMuted) {
+                Object.values(bgms).forEach(a => a.pause());
+                btn.innerText = '🔇';
+                btn.classList.add('opacity-50');
+            } else {
+                btn.innerText = '🎵';
+                btn.classList.remove('opacity-50');
+                if (audioUnlocked) bgms[currentBGM].play().catch(e=>{});
+            }
+        }
+
+        // 5. 全局交互监听（激活声音）
+        document.body.addEventListener('click', (e) => {
+            if (e.target.closest('#bgm-btn')) return;
+            initAudio(); // 任何点击都会强制恢复 AudioContext
+
+            if (e.target.closest('.btn-press') || e.target.closest('button')) {
+                playSynthSfx('click'); 
+            }
+        });
+
+        // ======= 词库配置 =======
+        const RAW_VOCAB = {
+            "识字一": "蓝天、太阳、小鸟、上学、读书、写字",
+            "第一单元": "花儿、招手、门口、一起、朋友、上学、草地、小鸟、树枝、做早操、学校、来了、跟着、我们、走到",
+            "第二单元": "上课、儿歌、故事、读书、知识、写字、笔画、用心、学习、错不了、开会、长大、要好、眼睛、也是、笔顺",
+            "第三单元": "哥哥、姐姐、笑声、全家、爸爸、妈妈、星星、中间、亲近、回来了、那么、很多、这颗、是的、三个、靠近、样子、明天",
+            "第四单元": "饭菜、苦瓜、吃鱼、还有、喜欢、妹妹、学校、房子、积木、游乐场、晚上、鸡蛋、桌子、可以、大家、都有、搭积木、飞机、配合、说话、他们、城市、和气",
+            "识字二": "双手、树林、一片、森林、绿色、小羊、舌头、甘甜、可爱",
+            "第五单元": "月亮、不见、露珠、照相、弯曲、青色、小河、肥胖、红太阳、一张、又是、出去、下雨、停电、更好、高山、好啊",
+            "第六单元": "一边、多少、记牢、老虎、蚂蚁、小虫、轻重、洞穴、一只猫、一群鹅、雨停了、一个、数一数、瞧见、搬家、动物、两个、点头、四个、五只、六个、七天、跳进",
+            "第七单元": "画画、脚爪、牙齿、我们、可以、花园、香味、你们、采花蜜、眼睛、小腿、很短、睡觉、就是、飞鸟、嗅觉、刚才、好吗、造船、时候、流汗、流水",
+            "第八单元": "香蕉、黄色、爬山、唱歌、风儿、快乐、很多、玩滑梯、坐飞机、飞翔、一棵树、好像、下去、里面、每天、从来、响亮、落叶、听见、一座",
+            "识字三": "不对、晴天、擦伤、吵闹、安静、天空、放学、事情",
+            "第九单元": "黑夜、蓝天、悄悄、最好、睡衣、发现、明白、铅笔、图画、慢慢地、换衣、颜色、把手、留下、用心、文字、课本",
+            "第十单元": "工具、简单、身后、小船、带走、剪刀、落叶、拿起、画纸、金沙滩、银色、好呀、木板、看见、一串、公园、轻轻、吹风、飘落、点头、贴纸",
+            "第十一单元": "老师、点头、见面、同学、相助、汽车、存钱、谢谢、玩具店、拉手、您好、握手、人们、礼貌、力气、买菜、学问、不能、算数、半年、十个、再见、一辆、书架、好吧",
+            "第十二单元": "海马、孩子、帮忙、翅膀、捕捉、得到、不见、父亲节、第一名、半年、运动会、几个、干净、什么、是呢、左右、青蛙、想想、荷叶、别人、真正、没有、许久、它们",
+            "识字四": "养鱼、洁白、羽毛、肚子、好饿、寻找、食物、吃饱、坏了",
+            "第十三单元": "晚上、娃娃、手影、灯光、墙上、出去、雨伞、怎么、房屋、比赛、东西、小兔、因为、她们、山顶、纸盒、遮住、干净",
+            "第十四单元": "跳进、玩耍、成为、蝴蝶、十分、报纸、应该、大力士、香喷喷、遮着、穿鞋子、干净、国家、清水、窗外、前面、兄弟",
+            "第十五单元": "生气、圆脸、高空、回答、摇摆、美丽、生病、变成、搭窝、花角鹿、踢球、走远、猜谜、新年、当然、他们、被子、打扫、站着、花朵",
+            "第十六单元": "停电、窗外、洗澡、知道、责怪、升起、时候、喊叫、分钟、踢球、厕所、大哭、不肯、起床、小狗、指着、大火、过去、开关",
+            "识字五": "增加、书包、拥抱、宝宝、手足、比赛、水泡、给你、杯子、喝茶、牛奶",
+            "第十七单元": "云朵、追赶、方法、哪里、兄弟、因为、顺着、欢呼、休息、住在、颜色、题目、等着、请问",
+            "第十八单元": "跳舞、农田、稻米、瓜果、土地、爱护、今天、男女、节目、国庆日、什么、九个、八只、国旗、一次、举手、共有、电视、手表",
+            "第十九单元": "天桥、热闹、彩虹、害怕、阿姨、排队、直立、叔叔、下班、方便、平安、背后、各自、种树、让开、马路、护送",
+            "第二十单元": "自己、收割、已经、好奇、鼻子、浇水、谈天、正在、动物园、音乐会、平安、邻居、伯伯、干活、星期、第二、加油、尺寸、大象、耳朵、尾巴、小猴、水牛、泥土、鸭子、办法、狮子",
+            "第二十一单元": "常常、告诉、容易、为难、吞食、肉类、尖利、转身、逃跑、爷爷、昨天、老鼠、嘴巴、一条、小蛇、咬死",
+            "第二十二单元": "吵醒、擦伤、折断、没有、疼痛、四周、打扫、破坏、午后、咬死、拾垃圾、小鸡、鸡啼、责骂、苹果、弄坏、是谁、一百、对齐、果皮、丢弃、水桶、院子"
+        };
+
+        const VOCAB_DATA = {};
+        Object.keys(RAW_VOCAB).forEach(k => {
+            VOCAB_DATA[k] = RAW_VOCAB[k].split('、').map(s => s.trim());
+        });
+
+        const { pinyin } = pinyinPro;
+
+        let currentMode = ''; 
+        let selectedUnits = [];
+        let redAbsent = new Set();
+        let blueAbsent = new Set();
+        let rosters = { red: [], blue: [], usedRed: [], usedBlue: [] };
+        let fcState = { index: 0, words: [] };
+        let pkState = {
+            maxRound: 0, turnQueue: [], currentTurnTeam: '', scores: { red: 0, blue: 0 },
+            baseTimer: 7, timer: 7, timeLeft: 7, timerInterval: null,
+            pool: [], currentPool: [], isEvolving: false, turnsPlayed: 0
+        };
+
+        window.onload = () => {
+            renderUnitGrid();
+            document.getElementById('red-count').onchange = () => renderAbsentGrid('red');
+            document.getElementById('blue-count').onchange = () => renderAbsentGrid('blue');
+        };
+
+        function switchView(viewId) {
+            document.querySelectorAll('#app > div').forEach(div => div.classList.add('hidden'));
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+            
+            if (viewId === 'flashcard') switchBGM('bgm-flashcard');
+            else if (viewId === 'pk-game') switchBGM('bgm-pk');
+            else if (['landing', 'unit-select', 'pk-setup'].includes(viewId)) switchBGM('bgm-lobby');
+
+            if (viewId === 'pk-setup') { renderAbsentGrid('red'); renderAbsentGrid('blue'); }
+        }
+
+        function selectMode(mode) { 
+            currentMode = mode; 
+            if (mode === 'pk') switchView('pk-setup'); 
+            else switchView('unit-select'); 
+        }
+
+        function goBackFromUnitSelect() {
+            if (currentMode === 'pk') switchView('pk-setup');
+            else switchView('landing');
+        }
+
+        function renderUnitGrid() {
+            const grid = document.getElementById('unit-grid');
+            grid.innerHTML = Object.keys(VOCAB_DATA).map(unit => `
+                <button onclick="toggleUnit('${unit}')" id="unit-${unit}" class="btn-press p-4 rounded-xl border-2 border-slate-700 font-bold bg-slate-800 text-slate-300 text-lg hover:border-indigo-400 transition-colors">
+                    ${unit}
+                </button>
+            `).join('');
+        }
+
+        function toggleUnit(unit) {
+            const btn = document.getElementById('unit-' + unit);
+            if (selectedUnits.includes(unit)) {
+                selectedUnits = selectedUnits.filter(u => u !== unit);
+                btn.className = "btn-press p-4 rounded-xl border-2 border-slate-700 font-bold bg-slate-800 text-slate-300 text-lg transition-colors";
+            } else {
+                selectedUnits.push(unit);
+                btn.className = "btn-press p-4 rounded-xl border-2 border-indigo-400 font-bold bg-indigo-600 text-white text-lg transition-colors shadow-lg";
+            }
+        }
+
+        function confirmUnits() {
+            if (selectedUnits.length === 0) return alert('请先选择至少一个单元！');
+            const pool = [];
+            selectedUnits.forEach(u => pool.push(...VOCAB_DATA[u]));
+            
+            if (currentMode === 'flashcard') {
+                fcState.words = [...pool];
+                fcState.index = 0;
+                document.getElementById('fc-finish').classList.add('hidden');
+                updateFlashcard(false);
+                switchView('flashcard');
+            } else {
+                pkState.pool = [...pool];
+                startPKCountdown();
+            }
+        }
+
+        function updateFlashcard(animate = true) {
+            const word = fcState.words[fcState.index];
+            const py = pinyin(word);
+            const card = document.getElementById('fc-card');
+            
+            if(animate) {
+                playSynthSfx('flip'); // 合成翻卡音效
+                card.classList.remove('card-flip');
+                void card.offsetWidth; 
+                card.classList.add('card-flip');
+            }
+
+            const wordEl = document.getElementById('fc-word');
+            wordEl.innerText = word;
+            wordEl.className = "font-black text-slate-900 leading-none transition-all";
+            if (word.length <= 2) wordEl.style.fontSize = '14vw';
+            else if (word.length === 3) wordEl.style.fontSize = '10vw';
+            else wordEl.style.fontSize = '7vw';
+
+            document.getElementById('fc-pinyin').innerText = py;
+            document.getElementById('fc-progress').innerText = `${fcState.index + 1}/${fcState.words.length}`;
+        }
+
+        function nextFlashcard() {
+            if (fcState.index < fcState.words.length - 1) { 
+                fcState.index++; 
+                updateFlashcard(); 
+            } else {
+                playSynthSfx('victory'); // 合成胜利音效
+                document.getElementById('fc-finish').classList.remove('hidden');
+                spawnConfetti('fc-finish', 80); 
+            }
+        }
+
+        function shuffleAndRestartFlashcard() {
+            fcState.words.sort(() => Math.random() - 0.5);
+            fcState.index = 0;
+            document.getElementById('fc-finish').classList.add('hidden');
+            updateFlashcard();
+        }
+
+        function renderAbsentGrid(team) {
+            const count = parseInt(document.getElementById(team + '-count').value);
+            const grid = document.getElementById(team + '-absent-grid');
+            const absentSet = (team === 'red' ? redAbsent : blueAbsent);
+            let html = '';
+            for (let i = 1; i <= count; i++) {
+                const isAbs = absentSet.has(i);
+                if(isAbs) {
+                    html += `<button onclick="toggleAbs('${team}', ${i})" class="btn-press h-10 rounded-lg font-bold border-2 bg-slate-800 text-slate-500 border-slate-700 relative line-through text-lg">${i} <span class="absolute inset-0 flex items-center justify-center text-red-500 text-xl">✗</span></button>`;
+                } else {
+                    html += `<button onclick="toggleAbs('${team}', ${i})" class="btn-press h-10 rounded-lg font-bold border-2 bg-slate-700 text-white border-slate-500 text-lg">${i}</button>`;
+                }
+            }
+            grid.innerHTML = html;
+        }
+
+        function toggleAbs(team, num) {
+            const set = (team === 'red' ? redAbsent : blueAbsent);
+            if (set.has(num)) set.delete(num); else set.add(num);
+            renderAbsentGrid(team);
+        }
+
+        function startPKCountdown() {
+            switchView('pk-countdown'); 
+            let count = 5;
+            const el = document.getElementById('pk-countdown-num');
+            el.innerText = count;
+            playSynthSfx('tick'); // 合成倒数音效
+            
+            const iv = setInterval(() => {
+                count--;
+                if(count > 0) {
+                    el.innerText = count;
+                    playSynthSfx('tick'); 
+                } else {
+                    clearInterval(iv);
+                    playSynthSfx('ding'); 
+                    initPKGame();
+                }
+            }, 1000);
+        }
+
+        function initPKGame() {
+            const rc = parseInt(document.getElementById('red-count').value);
+            const bc = parseInt(document.getElementById('blue-count').value);
+            rosters.red = Array.from({length: rc}, (_, i) => i + 1).filter(n => !redAbsent.has(n));
+            rosters.blue = Array.from({length: bc}, (_, i) => i + 1).filter(n => !blueAbsent.has(n));
+            rosters.usedRed = [];
+            rosters.usedBlue = [];
+
+            pkState.maxRound = Math.max(rosters.red.length, rosters.blue.length);
+            pkState.turnQueue = [];
+            for(let i=0; i<pkState.maxRound; i++) {
+                if (i < 14) pkState.turnQueue.push('red', 'blue');
+            }
+            let remainingRounds = pkState.maxRound - 14;
+            if(remainingRounds > 0) {
+                let evolveTurns = [];
+                for(let i=0; i<remainingRounds; i++) evolveTurns.push('red', 'blue');
+                evolveTurns.sort(() => Math.random() - 0.5);
+                pkState.turnQueue = pkState.turnQueue.concat(evolveTurns);
+            }
+
+            pkState.scores = { red: 0, blue: 0 };
+            document.getElementById('score-red').innerText = '0';
+            document.getElementById('score-blue').innerText = '0';
+            pkState.baseTimer = 7;
+            pkState.isEvolving = false;
+            document.body.classList.remove('evolve-bg');
+            document.getElementById('speed-warning').classList.add('hidden');
+            pkState.currentPool = [];
+            pkState.turnsPlayed = 0;
+            document.getElementById('max-round-display').innerText = pkState.maxRound;
+            
+            playSynthSfx('pkStart'); 
+            switchView('pk-game'); 
+            setTimeout(() => { nextPKTurn(); }, 1500);
+        }
+
+        function nextPKTurn() {
+            if(pkState.turnQueue.length === 0) {
+                showFinalResult();
+                return;
+            }
+
+            if(pkState.turnsPlayed >= 28 && !pkState.isEvolving) {
+                pkState.isEvolving = true;
+                pkState.baseTimer = 5;
+                playSynthSfx('evolve'); 
+                document.body.classList.add('evolve-bg');
+                document.getElementById('speed-warning').classList.remove('hidden');
+            }
+
+            pkState.currentTurnTeam = pkState.turnQueue.shift();
+            pkState.turnsPlayed++;
+            let displayRound = Math.ceil(pkState.turnsPlayed / 2);
+            document.getElementById('round-display').innerText = Math.min(displayRound, pkState.maxRound);
+            runRound(pkState.currentTurnTeam);
+        }
+
+        function runRound(team) {
+            const other = team === 'red' ? 'blue' : 'red';
+            document.getElementById(`panel-${team}`).classList.add(`active-${team}`);
+            document.getElementById(`panel-${team}`).classList.remove('inactive-panel');
+            document.getElementById(`panel-${other}`).classList.remove(`active-${other}`);
+            document.getElementById(`panel-${other}`).classList.add('inactive-panel');
+            document.getElementById(`timer-container-red`).classList.add('invisible');
+            document.getElementById(`timer-container-blue`).classList.add('invisible');
+            document.getElementById(`card-red`).classList.add('hidden');
+            document.getElementById(`card-blue`).classList.add('hidden');
+            document.getElementById('btn-correct').classList.add('hidden');
+            
+            let rosterKey = team;
+            let usedKey = team === 'red' ? 'usedRed' : 'usedBlue';
+            if (rosters[rosterKey].length === 0) {
+                rosters[rosterKey] = [...rosters[usedKey]];
+                rosters[usedKey] = [];
+            }
+            const idx = Math.floor(Math.random() * rosters[rosterKey].length);
+            const studentNum = rosters[rosterKey].splice(idx, 1)[0];
+            rosters[usedKey].push(studentNum);
+
+            const label = document.getElementById(`label-${team}`);
+            const numDisplay = document.getElementById(`num-${team}`);
+            document.getElementById(`lottery-${team}`).classList.remove('hidden');
+            label.classList.remove('opacity-0');
+            label.innerText = "准备点名...";
+
+            const validRollNumbers = [...rosters[rosterKey], ...rosters[usedKey]];
+            let count = 0;
+            const roller = setInterval(() => {
+                playSynthSfx('tick'); // 合成滚动音效
+                numDisplay.innerText = validRollNumbers[Math.floor(Math.random() * validRollNumbers.length)];
+                if (++count > 15) {
+                    clearInterval(roller);
+                    playSynthSfx('ding'); 
+                    numDisplay.innerText = studentNum;
+                    label.innerText = `[${studentNum}号] 起立准备！`;
+                    setTimeout(() => revealWord(team), 1000);
+                }
+            }, 60);
+        }
+
+        function getNextWordFromPool() {
+            if(pkState.currentPool.length === 0) {
+                pkState.currentPool = [...pkState.pool].sort(() => Math.random() - 0.5);
+            }
+            return pkState.currentPool.pop();
+        }
+
+        function revealWord(team) {
+            document.getElementById(`lottery-${team}`).classList.add('hidden');
+            const word = getNextWordFromPool();
+            const py = pinyin(word);
+            const card = document.getElementById(`card-${team}`);
+            const wordEl = document.getElementById(`word-${team}`);
+            
+            wordEl.innerText = word;
+            wordEl.className = "font-black text-slate-900 leading-tight whitespace-nowrap transition-all";
+            if (word.length <= 2) wordEl.style.fontSize = '6.5vw';
+            else if (word.length === 3) wordEl.style.fontSize = '5vw';
+            else wordEl.style.fontSize = '3.5vw';
+
+            document.getElementById(`pinyin-${team}`).innerText = py;
+            playSynthSfx('flip'); 
+            
+            card.classList.remove('card-flip');
+            void card.offsetWidth;
+            card.classList.add('card-flip');
+            card.classList.remove('hidden');
+            document.getElementById('btn-correct').classList.remove('hidden');
+            startCountdown(team);
+        }
+
+        function startCountdown(team) {
+            clearInterval(pkState.timerInterval);
+            pkState.timer = pkState.baseTimer;
+            pkState.timeLeft = pkState.timer;
+            const num = document.getElementById(`timer-num-${team}`);
+            const bar = document.getElementById(`timer-bar-${team}`);
+            document.getElementById(`timer-container-${team}`).classList.remove('invisible');
+            
+            num.innerText = pkState.timeLeft;
+            bar.style.transition = 'none';
+            bar.style.width = "100%";
+            void bar.offsetWidth;
+            bar.style.transition = 'width 1s linear';
+
+            pkState.timerInterval = setInterval(() => {
+                pkState.timeLeft -= 1;
+                num.innerText = Math.max(0, pkState.timeLeft);
+                bar.style.width = (pkState.timeLeft / pkState.timer * 100) + "%";
+                
+                if(pkState.timeLeft > 0 && pkState.timeLeft <= 3) {
+                    playSynthSfx('tick'); 
+                }
+
+                if (pkState.timeLeft <= 0) {
+                    clearInterval(pkState.timerInterval);
+                    processResult(false); 
+                }
+            }, 1000);
+        }
+
+        function processResult(isCorrect) {
+            clearInterval(pkState.timerInterval);
+            document.getElementById('btn-correct').classList.add('hidden'); 
+            if (isCorrect) {
+                playSynthSfx('correct'); // 合成答对音效
+                let earned = 10 + Math.ceil(pkState.timeLeft) * 2;
+                if (pkState.isEvolving) earned *= 2; 
+                addScore(pkState.currentTurnTeam, earned);
+            } else {
+                playSynthSfx('wrong'); // 合成答错音效
+            }
+            setTimeout(() => { nextPKTurn(); }, 1000);
+        }
+
+        function addScore(team, points) {
+            pkState.scores[team] += points;
+            const el = document.getElementById(`score-${team}`);
+            el.innerText = pkState.scores[team];
+            const pop = document.createElement('div');
+            pop.className = "absolute -top-10 left-1/2 -translate-x-1/2 text-5xl font-black text-yellow-400 score-pop z-[100] font-game drop-shadow-lg";
+            pop.innerText = `+${points}`;
+            el.parentElement.appendChild(pop);
+            setTimeout(() => pop.remove(), 1000);
+        }
+
+        function manualScore(team, points) {
+            pkState.scores[team] += points;
+            if (pkState.scores[team] < 0) pkState.scores[team] = 0; 
+            const el = document.getElementById(`score-${team}`);
+            el.innerText = pkState.scores[team];
+            playSynthSfx('wrong'); // 合成扣分音效
+            const pop = document.createElement('div');
+            pop.className = "absolute -top-10 left-1/2 -translate-x-1/2 text-5xl font-black text-red-500 score-pop z-[100] font-game drop-shadow-lg";
+            pop.innerText = points; 
+            el.parentElement.appendChild(pop);
+            setTimeout(() => pop.remove(), 1000);
+        }
+
+        function showFinalResult() {
+            document.getElementById(`panel-red`).classList.remove('active-red', 'inactive-panel');
+            document.getElementById(`panel-blue`).classList.remove('active-blue', 'inactive-panel');
+            document.body.classList.remove('evolve-bg');
+            playSynthSfx('victory'); 
+            switchView('result'); 
+            document.getElementById('final-score-red').innerText = pkState.scores.red;
+            document.getElementById('final-score-blue').innerText = pkState.scores.blue;
+            
+            const winLabel = document.getElementById('winner-announcement');
+            if (pkState.scores.red > pkState.scores.blue) {
+                winLabel.innerText = "🏆 恭喜红组 获得胜利！";
+                winLabel.className = "text-[6vw] font-black bg-clip-text text-transparent bg-gradient-to-b from-red-400 to-red-600 mb-12 font-game drop-shadow-[0_10px_30px_rgba(239,68,68,0.5)]";
+            } else if (pkState.scores.blue > pkState.scores.red) {
+                winLabel.innerText = "🏆 恭喜蓝组 获得胜利！";
+                winLabel.className = "text-[6vw] font-black bg-clip-text text-transparent bg-gradient-to-b from-blue-400 to-blue-600 mb-12 font-game drop-shadow-[0_10px_30px_rgba(59,130,246,0.5)]";
+            } else {
+                winLabel.innerText = "🤝 旗鼓相当 平局！";
+                winLabel.className = "text-[6vw] font-black bg-clip-text text-transparent bg-gradient-to-b from-slate-300 to-slate-500 mb-12 font-game drop-shadow-lg";
+            }
+            spawnConfetti('view-result', 100);
+        }
+
+        function spawnConfetti(containerId, amount) {
+            const container = document.getElementById(containerId);
+            container.querySelectorAll('.confetti').forEach(e => e.remove());
+            const colors = ['#ef4444','#3b82f6','#fbbf24','#22c55e', '#a855f7'];
+            for(let i=0; i<amount; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random() * 100 + 'vw';
+                c.style.top = -10 - Math.random() * 20 + 'vh';
+                c.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+                c.style.animationDuration = 2 + Math.random() * 3 + 's';
+                c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                container.appendChild(c);
+            }
+        }
+    </script>
+</body>
+</html>
