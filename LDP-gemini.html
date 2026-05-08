@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LDP Gemini AI Course Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans SC', sans-serif; background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        body.lang-cn .my-text { display: none !important; }
+        body.lang-my .cn-text { display: none !important; }
+        .cn-text, .my-text { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .tab-content { display: none; animation: slideUp 0.4s ease-out forwards; }
+        .tab-content.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-btn.active { border-bottom-width: 3px; border-color: #4f46e5; color: #4f46e5; font-weight: bold; }
+        .tab-btn:not(.active) { color: #6b7280; font-weight: 500; }
+        .tab-btn:not(.active):hover { color: #4f46e5; background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-8 lang-cn">
+    <div class="glass-card max-w-3xl w-full rounded-3xl shadow-2xl overflow-hidden border border-white/50 relative">
+        
+        <button id="langToggleBtn" class="absolute top-4 right-4 z-50 bg-blue-600/80 hover:bg-blue-700 text-white rounded-full px-4 py-2 text-sm font-bold shadow-lg transition-all flex items-center">
+            <i class="fa-solid fa-language mr-2"></i> 
+            <span class="cn-text">Tukar ke BM</span>
+            <span class="my-text">切换至中文</span>
+        </button>
+
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 sm:p-10 text-center relative overflow-hidden text-white">
+            <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+            <span class="inline-block px-4 py-1 bg-yellow-400 text-blue-900 font-bold rounded-full text-sm mb-4 shadow-sm relative z-10">
+                <span class="cn-text">✨ 零代码 • 轻松做教具 ✨</span>
+                <span class="my-text">✨ Tanpa Kod • Bina BBM Mudah ✨</span>
+            </span>
+            <h1 class="text-3xl sm:text-4xl font-bold mb-2 relative z-10 drop-shadow-md">
+                <span class="cn-text">Gemini AI 互动教具制作培训</span>
+                <span class="my-text">Kursus LDP BBM Interaktif Gemini AI</span>
+            </h1>
+            <p class="text-blue-100 text-sm sm:text-base relative z-10">Program LDP: Aplikasi AI Gemini dalam Pembinaan BBM Interaktif</p>
+        </div>
+
+        <div class="flex border-b border-gray-200 bg-white/50">
+            <button class="tab-btn flex-1 py-4 text-center transition-colors focus:outline-none" data-target="tab-info">
+                <i class="fa-solid fa-circle-info mr-2"></i>
+                <span class="cn-text">课程介绍</span><span class="my-text">Pengenalan</span>
+            </button>
+            <button class="tab-btn active flex-1 py-4 text-center transition-colors focus:outline-none relative" data-target="tab-progress">
+                <i class="fa-solid fa-rocket mr-2"></i>
+                <span class="cn-text">最新进展</span><span class="my-text">Perkembangan</span>
+            </button>
+        </div>
+
+        <div class="p-6 sm:p-10">
+            
+            <!-- TAB 1: Info (Welcome & Rules) -->
+            <div id="tab-info" class="tab-content space-y-8">
+                <div class="text-center">
+                    <p class="text-lg text-gray-700 font-medium">
+                        <span class="cn-text">各位充满热忱的老师们，大家好！👋</span><span class="my-text">Salam sejahtera kepada semua guru yang berdedikasi! 👋</span>
+                    </p>
+                </div>
+                <div class="bg-blue-50 rounded-2xl p-6 border border-blue-100 relative">
+                    <div class="absolute -top-4 left-6 bg-blue-500 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <h2 class="text-xl font-bold text-blue-800 mb-3 mt-2">
+                        <span class="cn-text">解锁魔法：AI Vibe Coding</span><span class="my-text">Buka Kunci Magis: AI Vibe Coding</span>
+                    </h2>
+                    <div class="text-gray-700 leading-relaxed text-sm sm:text-base">
+                        <span class="cn-text">不需要写代码！只要懂得<strong class="text-blue-600">“教学逻辑”</strong>，把画面用<strong class="text-blue-600">“大白话”</strong>告诉AI即可！</span>
+                        <span class="my-text">Tidak perlu tulis kod! Hanya fahami <strong class="text-blue-600">"Logik Pedagogi"</strong> dan beritahu AI visual anda!</span>
+                    </div>
+                </div>
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1 bg-orange-50 rounded-2xl p-6 border border-orange-100 relative">
+                        <div class="absolute -top-4 left-6 bg-orange-500 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg"><i class="fa-regular fa-calendar-days"></i></div>
+                        <h2 class="text-lg font-bold text-orange-800 mb-3 mt-2"><span class="cn-text">课程安排</span><span class="my-text">Jadual Kursus</span></h2>
+                        <ul class="space-y-1 text-gray-700 font-medium mb-4 text-sm">
+                            <li><i class="fa-solid fa-thumbtack text-orange-400 mr-2"></i> 24/4, 8/5, 15/5, 22/5 (1PM-2PM @ Bilik 1I)</li>
+                        </ul>
+                    </div>
+                    <div class="flex-1 bg-purple-50 rounded-2xl p-6 border border-purple-100 relative">
+                        <div class="absolute -top-4 left-6 bg-purple-500 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg"><i class="fa-solid fa-laptop"></i></div>
+                        <h2 class="text-lg font-bold text-purple-800 mb-3 mt-2"><span class="cn-text">温馨提醒</span><span class="my-text">Peringatan Mesra</span></h2>
+                        <ul class="space-y-2 text-gray-700 font-medium mb-4 text-sm">
+                            <li><span class="cn-text">💻 请自带手提电脑。</span><span class="my-text">💻 Sila bawa komputer riba sendiri.</span></li>
+                            <li><span class="cn-text">⚠️ 缺席者/新加入者，请在下一堂课**提早 30 分钟**抵达补课哦！</span><span class="my-text">⚠️ Peserta baharu/tidak hadir, sila datang awal 30 minit untuk sesi Catch-up!</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Progress (Dynamic Timeline) -->
+            <div id="tab-progress" class="tab-content active space-y-8">
+                <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100 relative">
+                    <div class="absolute -top-4 left-6 bg-indigo-600 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg"><i class="fa-solid fa-bullhorn"></i></div>
+                    <h2 class="text-xl font-bold text-indigo-900 mb-5 mt-2">
+                        <span class="cn-text">🚀 培训日志与任务预告</span><span class="my-text">🚀 Log Latihan & Pratonton Tugasan</span>
+                    </h2>
+                    
+                    <div class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:bg-slate-300">
+                        
+                        <!-- Sesi 1: Completed -->
+                        <div class="relative flex items-start gap-6">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white shadow z-10 shrink-0"><i class="fa-solid fa-check"></i></div>
+                            <div class="flex-grow p-4 rounded-xl border border-green-200 bg-green-50/50">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="font-bold text-green-700">Sesi 1 (24/4): 破冰与原型</div>
+                                    <div class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded"><span class="cn-text">已完成</span><span class="my-text">Selesai</span></div>
+                                </div>
+                                <div class="text-sm text-gray-700 space-y-1">
+                                    <p>
+                                        <span class="cn-text">✅ 体验了 Vibe Coding，学会用“大白话”让 AI 写游戏。</span>
+                                        <span class="my-text">✅ Memahami Vibe Coding, jana game dengan bahasa mudah.</span>
+                                    </p>
+                                    <p>
+                                        <span class="cn-text">✅ 掌握 `host-html.com` 免费发布技巧，成功带入班级实战！</span>
+                                        <span class="my-text">✅ Berjaya menerbit BBM melalui `host-html.com` untuk kelas!</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sesi 2: Completed (New Content) -->
+                        <div class="relative flex items-start gap-6">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white shadow z-10 shrink-0"><i class="fa-solid fa-check-double"></i></div>
+                            <div class="flex-grow p-4 rounded-xl border border-green-200 bg-green-50/50">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="font-bold text-green-700">Sesi 2 (8/5): 试玩互评与语音魔法</div>
+                                    <div class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded"><span class="cn-text">已完成</span><span class="my-text">Selesai</span></div>
+                                </div>
+                                <div class="text-sm text-gray-700 space-y-2">
+                                    <p class="bg-white p-2 rounded border border-green-100">
+                                        <span class="cn-text">💡 <strong>导演思维：</strong> 从迈克尔·杰克逊的启发中领悟到，AI 技术大家都有，核心在于“你想解决什么问题、你要什么效果”！</span>
+                                        <span class="my-text">💡 <strong>Minda Pengarah:</strong> Inspirasi dari Michael Jackson - Teknologi ada di mana-mana, yang membezakannya ialah "niat dan penyelesaian kita"!</span>
+                                    </p>
+                                    <p class="bg-white p-2 rounded border border-green-100">
+                                        <span class="cn-text">🤝 <strong>使用者体验 (UX)：</strong> 分组互玩作品，跳出创作者盲点，学会站在“学生角度”看待游戏设计。</span>
+                                        <span class="my-text">🤝 <strong>Pengalaman Pengguna (UX):</strong> Sesi playtest kumpulan. Belajar fikir dari perspektif "Murid", bukan sekadar "Pencipta".</span>
+                                    </p>
+                                    <p class="bg-white p-2 rounded border border-green-100">
+                                        <span class="cn-text">🔊 <strong>TTS 语音与 Cache 缓存：</strong> 见证了高级 AI 语音朗读 KVKV 和中文的震撼！全员共同攻克了 API 延迟 10 秒的痛点，学会了利用“缓存”逻辑提升效能。</span>
+                                        <span class="my-text">🔊 <strong>Suara TTS & Logik Cache:</strong> Terpegun dengan sebutan AI untuk KVKV & B. Cina! Kita juga berjaya menyelesaikan isu <em>lagging</em> 10 saat dengan logik "Caching".</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sesi 3: Upcoming -->
+                        <div class="relative flex items-start gap-6">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white shadow z-10 shrink-0"><i class="fa-solid fa-spinner fa-spin"></i></div>
+                            <div class="flex-grow p-4 rounded-xl border border-blue-200 bg-white shadow-md transform transition hover:scale-[1.01] border-l-4 border-l-blue-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="font-bold text-blue-800">Sesi 3 (15/5): 拿回掌控权与专属打卡站</div>
+                                    <div class="text-xs font-medium text-white bg-blue-600 px-2 py-0.5 rounded animate-pulse"><span class="cn-text">下期预告</span><span class="my-text">Akan Datang</span></div>
+                                </div>
+                                <div class="text-sm text-gray-700 space-y-3">
+                                    <p class="bg-blue-50 p-2 rounded">
+                                        <span class="cn-text"><strong>💻 GitHub Pages 部署：</strong> `host-html` 无法修改太麻烦？下堂课手把手教你建立专属的 GitHub 游戏库，随时随地在线修改、更新代码！</span>
+                                        <span class="my-text"><strong>💻 Deployment GitHub Pages:</strong> Belajar bina repositori GitHub sendiri supaya anda boleh ubah suai kod BBM pada bila-bila masa!</span>
+                                    </p>
+                                    <p class="bg-purple-50 p-2 rounded">
+                                        <span class="cn-text"><strong>🌐 动态作品收集平台：</strong> 我们将引入结合 Firebase 云端数据库的“打卡交件系统”，让大家的教具作品能互相展示与试玩！</span>
+                                        <span class="my-text"><strong>🌐 Portal Koleksi BBM Dinamik:</strong> Pengenalan kepada portal berasaskan <em>Cloud Database</em> (Firebase) untuk pendaftaran dan pameran karya rakan guru!</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sesi 4 -->
+                        <div class="relative flex items-start gap-6">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-500 shadow z-10 shrink-0"><i class="fa-solid fa-ellipsis"></i></div>
+                            <div class="flex-grow p-3 rounded-xl border border-gray-200 bg-gray-50/50 text-gray-500 text-sm">
+                                <span class="cn-text">Sesi 4 (22/5): 离线备份方案与 RPH (教案) 融合实战。</span>
+                                <span class="my-text">Sesi 4 (22/5): Pelan Sandaran Luar Talian & Integrasi RPH.</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const langToggleBtn = document.getElementById('langToggleBtn');
+        langToggleBtn.addEventListener('click', () => { 
+            document.body.classList.toggle('lang-cn'); 
+            document.body.classList.toggle('lang-my'); 
+        });
+        
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
