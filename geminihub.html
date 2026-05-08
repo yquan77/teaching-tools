@@ -3,46 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LDP Gemini SJK (C) KUO KUANG 2 | Resource Hub</title>
+    <title>LDP Gemini SJK (C) KUO KUANG 2 | Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: linear-gradient(135deg, #f0f4ff 0%, #f5f3ff 100%);
+            background: #fdfdff;
         }
         .glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
         }
         .bento-card {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
         }
         .bento-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            transform: translateY(-8px) scale(1.01);
+            box-shadow: 0 30px 60px -12px rgba(50, 50, 93, 0.1), 0 18px 36px -18px rgba(0, 0, 0, 0.1);
         }
-        .gradient-bg {
-            background: linear-gradient(120deg, #6366f1, #a855f7);
+        .gradient-text {
+            background: linear-gradient(to right, #4f46e5, #9333ea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
+        .star-active { fill: #fbbf24; color: #fbbf24; }
+        .star-empty { color: #d1d5db; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        
-        /* Star Styling */
-        .star-container { display: flex; align-items: center; gap: 1px; }
-        .star-filled { fill: #facc15; color: #facc15; }
-        .star-empty { color: #e2e8f0; }
     </style>
 </head>
 <body class="text-slate-900 min-h-screen relative overflow-x-hidden">
-    <!-- Background Decor -->
-    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-200/30 rounded-full blur-[120px] -z-10"></div>
-    <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-200/30 rounded-full blur-[120px] -z-10"></div>
+    <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-100/40 rounded-full blur-[140px] -z-10"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-100/40 rounded-full blur-[140px] -z-10"></div>
 
     <div id="root"></div>
 
@@ -65,7 +63,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
-        const appId = 'ldp-kuo-kuang-2';
+        const appId = 'ldp-kuo-kuang-final'; // 新路径隔离
 
         window.fb = { 
             auth, db, appId, collection, onSnapshot, doc, updateDoc, addDoc, 
@@ -78,27 +76,22 @@
         const { useState, useEffect, useMemo } = React;
         const { auth, db, appId, collection, onSnapshot, doc, updateDoc, addDoc, getDoc, setDoc, deleteDoc, increment, signInAnonymously, onAuthStateChanged, signInWithPopup, provider, signOut, query, where, arrayUnion } = window.fb;
 
-        // 🛠️ 管理员邮箱配置 - 在此填入您的邮箱
-        const ADMIN_EMAILS = ["yquan77@gmail.com", "admin@example.com"];
+        // 🛠️ 请在此处配置管理员邮箱
+        const ADMIN_EMAILS = ["yquan77@gmail.com"];
 
         const SUBJECTS = ["Matematik", "Sains", "Bahasa Melayu", "Bahasa Cina", "Bahasa Inggeris", "RBT", "Sejarah", "Pend. Islam", "Pend. Moral", "PSV", "Muzik", "PJ & PK"];
         const YEARS = ["Tahun 1", "Tahun 2", "Tahun 3", "Tahun 4", "Tahun 5", "Tahun 6"];
         const TYPES = ["Latihan", "Pengajaran", "Permainan", "Alatan/Tools"];
 
-        // 星星评分组件
-        const StarRating = ({ rating }) => {
-            const stars = [];
-            for (let i = 1; i <= 5; i++) {
-                if (i <= Math.floor(rating)) {
-                    stars.push(<i key={i} data-lucide="star" className="w-4 h-4 star-filled"></i>);
-                } else if (i === Math.ceil(rating) && rating % 1 !== 0) {
-                    // 半星逻辑：这里用 Lucide 的 Star 并通过 CSS 遮盖实现半星感 (或直接用 StarHalf)
-                    stars.push(<i key={i} data-lucide="star-half" className="w-4 h-4 star-filled"></i>);
-                } else {
-                    stars.push(<i key={i} data-lucide="star" className="w-4 h-4 star-empty"></i>);
-                }
-            }
-            return <div className="star-container">{stars}</div>;
+        // 视觉映射逻辑：根据关键词匹配图标和颜色
+        const getVisualSet = (title = "", subject = "") => {
+            const lower = title.toLowerCase() + subject.toLowerCase();
+            if (lower.includes("matematik") || lower.includes("数学") || lower.includes("算")) return { icon: "calculator", color: "bg-blue-500", text: "text-blue-600", light: "bg-blue-50" };
+            if (lower.includes("sains") || lower.includes("科学") || lower.includes("实验")) return { icon: "beaker", color: "bg-emerald-500", text: "text-emerald-600", light: "bg-emerald-50" };
+            if (lower.includes("bahasa") || lower.includes("文") || lower.includes("语")) return { icon: "languages", color: "bg-orange-500", text: "text-orange-600", light: "bg-orange-50" };
+            if (lower.includes("game") || lower.includes("游戏") || lower.includes("玩")) return { icon: "gamepad-2", color: "bg-purple-500", text: "text-purple-600", light: "bg-purple-50" };
+            if (lower.includes("flashcard") || lower.includes("卡")) return { icon: "layers", color: "bg-rose-500", text: "text-rose-600", light: "bg-rose-50" };
+            return { icon: "sparkles", color: "bg-indigo-500", text: "text-indigo-600", light: "bg-indigo-50" };
         };
 
         const App = () => {
@@ -108,7 +101,8 @@
             const [projects, setProjects] = useState([]);
             const [globalStats, setGlobalStats] = useState({ totalViews: 0, totalClicks: 0, totalProjects: 0 });
             const [loading, setLoading] = useState(true);
-            const [showModal, setShowModal] = useState(false);
+            const [modalMode, setModalMode] = useState(null); // 'create' | 'edit' | null
+            const [editingProject, setEditingProject] = useState(null);
             const [filter, setFilter] = useState({ subject: 'All', year: 'All', type: 'All' });
             const [form, setForm] = useState({ name: '', link: '', subject: 'Matematik', year: 'Tahun 1', type: 'Permainan' });
 
@@ -116,314 +110,210 @@
 
             const t = {
                 zh: {
-                    welcome: "欢迎来到 AI 教学资源中心",
-                    subwelcome: "SJK (C) KUO KUANG 2",
-                    loginGoogle: "Google 账号登录",
-                    guestEntry: "以访客身份进入",
-                    tagline: "让您的 AI 创意被看见，让教学更轻松",
-                    langSwitch: "Bahasa Melayu",
-                    dashboard: { projects: "作品总量", views: "总访问量", clicks: "点击使用", my: "我的贡献" },
-                    filter: { allSub: "全部科目", allYear: "全部年级", allType: "全部种类" },
-                    btnPublish: "发布作品",
-                    btnLogout: "登出",
-                    btnPlay: "试用作品",
-                    noData: "暂无作品，切换分类试试",
-                    adminTag: "超级管理员",
-                    modal: {
-                        title: "发布您的 AI 作品",
-                        sub: "请填写作品详情以便存档与分类",
-                        name: "作品名称",
-                        link: "GitHub Pages 链接",
-                        subLabel: "科目",
-                        yearLabel: "年级",
-                        typeLabel: "种类",
-                        cancel: "取消",
-                        confirm: "立即发布"
-                    }
+                    welcome: "AI 教学资源中心", sub: "SJK (C) KUO KUANG 2", google: "Google 账号登录", guest: "以访客身份进入",
+                    tagline: "意念编程 • 创意无限", projects: "作品总量", views: "总访问量", clicks: "点击使用", my: "我的贡献",
+                    publish: "发布作品", logout: "登出", noData: "暂无作品", admin: "管理员", edit: "修改作品", delete: "删除作品",
+                    modalTitle: "发布您的 AI 作品", modalSub: "请填写详细信息以便分类", btnConfirm: "立即发布", btnUpdate: "保存修改",
+                    placeholderName: "作品名称 (如: 一年级识字闪卡)", placeholderLink: "GitHub Pages 链接"
                 },
                 ms: {
-                    welcome: "Pusat Sumber AI",
-                    subwelcome: "SJK (C) KUO KUANG 2",
-                    loginGoogle: "Log Masuk Google",
-                    guestEntry: "Masuk sebagai Tetamu",
-                    tagline: "Kongsi kreativiti AI anda untuk pengajaran yang lebih mudah",
-                    langSwitch: "中文界面",
-                    dashboard: { projects: "Jumlah Karya", views: "Jumlah Lawatan", clicks: "Klik Guna", my: "Sumbangan Saya" },
-                    filter: { allSub: "Semua Subjek", allYear: "Semua Tahun", allType: "Semua Kategori" },
-                    btnPublish: "Hantar Karya",
-                    btnLogout: "Log Keluar",
-                    btnPlay: "Cuba Guna",
-                    noData: "Tiada karya ditemui bagi kategori ini",
-                    adminTag: "Pentadbir",
-                    modal: {
-                        title: "Hantar Karya AI Anda",
-                        sub: "Sila lengkapkan butiran karya untuk arkib",
-                        name: "Nama Karya",
-                        link: "Pautan GitHub Pages",
-                        subLabel: "Subjek",
-                        yearLabel: "Tahun",
-                        typeLabel: "Kategori",
-                        cancel: "Batal",
-                        confirm: "Hantar Sekarang"
-                    }
+                    welcome: "Pusat Sumber AI", sub: "SJK (C) KUO KUANG 2", google: "Log Masuk Google", guest: "Masuk Tetamu",
+                    tagline: "Vibe Coding • Kreativiti Tanpa Had", projects: "Jumlah Karya", views: "Jumlah Lawatan", clicks: "Klik Guna", my: "Sumbangan Saya",
+                    publish: "Hantar Karya", logout: "Log Keluar", noData: "Tiada Karya", admin: "Admin", edit: "Kemaskini", delete: "Padam",
+                    modalTitle: "Hantar Karya AI Anda", modalSub: "Sila lengkapkan butiran karya", btnConfirm: "Hantar Sekarang", btnUpdate: "Simpan",
+                    placeholderName: "Nama Karya (cth: Flashcard BM)", placeholderLink: "Pautan GitHub Pages"
                 }
             }[lang];
 
             useEffect(() => {
-                const unsubAuth = onAuthStateChanged(auth, (u) => {
-                    setUser(u);
-                    setIsCheckingAuth(false);
-                });
-                return () => unsubAuth();
+                const unsub = onAuthStateChanged(auth, u => { setUser(u); setIsCheckingAuth(false); });
+                return () => unsub();
             }, []);
 
             useEffect(() => {
                 if (!user) return;
-                const updateVisitStats = async () => {
-                    try {
-                        const statDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'global');
-                        await setDoc(statDocRef, { totalViews: increment(1) }, { merge: true });
-                    } catch (e) {}
-                };
-                updateVisitStats();
+                const statDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'global');
+                setDoc(statDocRef, { totalViews: increment(1) }, { merge: true });
 
-                const projectsCol = collection(db, 'artifacts', appId, 'public', 'data', 'projects');
-                const unsubProjects = onSnapshot(projectsCol, (snapshot) => {
-                    const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                    setProjects(list);
+                const unsubP = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'projects'), s => {
+                    const list = s.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setProjects(list.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0)));
                     setLoading(false);
                 });
 
-                const statDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'global');
-                const unsubStats = onSnapshot(statDocRef, (d) => {
-                    if (d.exists()) setGlobalStats(d.data());
-                });
-
-                return () => { unsubProjects(); unsubStats(); };
+                const unsubS = onSnapshot(statDocRef, d => d.exists() && setGlobalStats(d.data()));
+                return () => { unsubP(); unsubS(); };
             }, [user]);
 
-            useEffect(() => {
-                lucide.createIcons();
-            }, [user, projects, loading, showModal, lang]);
+            useEffect(() => { lucide.createIcons(); }, [user, projects, loading, modalMode, lang]);
 
-            const loginWithGoogle = () => signInWithPopup(auth, provider);
-            const loginAsGuest = () => signInAnonymously(auth);
-            const logout = () => signOut(auth);
+            const login = (type) => type === 'google' ? signInWithPopup(auth, provider) : signInAnonymously(auth);
 
-            const handleSubmit = async (e) => {
+            const handleSave = async (e) => {
                 e.preventDefault();
-                if (user.isAnonymous) return; 
                 try {
-                    const projectsCol = collection(db, 'artifacts', appId, 'public', 'data', 'projects');
-                    await addDoc(projectsCol, {
-                        ...form,
-                        creatorId: user.uid,
-                        creatorName: user.displayName || 'Teacher',
-                        creatorPhoto: user.photoURL || null,
-                        creatorEmail: user.email,
-                        timestamp: Date.now(),
-                        views: 0, clicks: 0, stars: 0, ratingCount: 0, votedUsers: []
-                    });
-                    const statDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'global');
-                    await updateDoc(statDocRef, { totalProjects: increment(1) });
-                    setShowModal(false);
+                    const col = collection(db, 'artifacts', appId, 'public', 'data', 'projects');
+                    if (modalMode === 'edit') {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'projects', editingProject.id), form);
+                    } else {
+                        await addDoc(col, { 
+                            ...form, creatorId: user.uid, creatorName: user.displayName || 'Teacher', 
+                            creatorPhoto: user.photoURL || null, timestamp: Date.now(), 
+                            views: 0, clicks: 0, stars: 0, ratingCount: 0, votedUsers: [] 
+                        });
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'global'), { totalProjects: increment(1) });
+                    }
+                    setModalMode(null);
+                    setForm({ name: '', link: '', subject: 'Matematik', year: 'Tahun 1', type: 'Permainan' });
                 } catch (e) { console.error(e); }
             };
 
             const handleDelete = async (id) => {
-                if (!isAdmin) return;
-                if (!confirm("确定要删除此作品吗？此操作无法撤销。")) return;
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'projects', id));
-                    const statDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'global');
-                    await updateDoc(statDocRef, { totalProjects: increment(-1) });
-                } catch (e) { console.error(e); }
+                if (!isAdmin || !confirm("确定删除？")) return;
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'projects', id));
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'global'), { totalProjects: increment(-1) });
             };
 
-            const trackClick = async (id) => {
-                const pDoc = doc(db, 'artifacts', appId, 'public', 'data', 'projects', id);
-                const sDoc = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'global');
-                await updateDoc(pDoc, { clicks: increment(1) });
-                await updateDoc(sDoc, { totalClicks: increment(1) });
-            };
-
-            const handleRate = async (id, currentRating, currentCount, votedUsers = [], newStar) => {
-                if (votedUsers.includes(user.uid)) return; 
-                const pDoc = doc(db, 'artifacts', appId, 'public', 'data', 'projects', id);
-                const newScore = ((currentRating * currentCount) + newStar) / (currentCount + 1);
-                await updateDoc(pDoc, { 
-                    stars: Number(newScore.toFixed(1)), 
+            const handleRate = async (p, star) => {
+                if (p.votedUsers?.includes(user.uid)) return;
+                const newScore = ((p.stars * p.ratingCount) + star) / (p.ratingCount + 1);
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'projects', p.id), {
+                    stars: Number(newScore.toFixed(1)),
                     ratingCount: increment(1),
                     votedUsers: arrayUnion(user.uid)
                 });
             };
 
             const filteredProjects = useMemo(() => {
-                return projects.filter(p => {
-                    const matchSub = filter.subject === 'All' || p.subject === filter.subject;
-                    const matchYear = filter.year === 'All' || p.year === filter.year;
-                    const matchType = filter.type === 'All' || p.type === filter.type;
-                    return matchSub && matchYear && matchType;
-                });
+                return projects.filter(p => (filter.subject === 'All' || p.subject === filter.subject) && (filter.year === 'All' || p.year === filter.year) && (filter.type === 'All' || p.type === filter.type));
             }, [projects, filter]);
 
             if (isCheckingAuth) return null;
-            if (!user) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center p-6">
-                        <div className="glass max-w-lg w-full p-10 rounded-[3rem] text-center shadow-2xl border-white/50 relative overflow-hidden">
-                            <div className="absolute top-6 right-8">
-                                <button onClick={() => setLang(lang === 'zh' ? 'ms' : 'zh')} className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
-                                    <i data-lucide="languages" className="w-4 h-4"></i> {t.langSwitch}
-                                </button>
-                            </div>
-                            <div className="gradient-bg w-20 h-20 rounded-3xl mx-auto mb-8 flex items-center justify-center text-white shadow-xl rotate-3">
-                                <i data-lucide="sparkles" className="w-10 h-10"></i>
-                            </div>
-                            <h1 className="text-3xl font-extrabold text-slate-900 mb-2">{t.welcome}</h1>
-                            <p className="text-slate-500 mb-10 font-medium">{t.subwelcome}</p>
-                            <div className="space-y-4">
-                                <button onClick={loginWithGoogle} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all shadow-lg">
-                                    <img src="https://www.google.com/favicon.ico" className="w-5 h-5 brightness-200" /> {t.loginGoogle}
-                                </button>
-                                <button onClick={loginAsGuest} className="w-full py-4 bg-white text-slate-600 border border-slate-200 rounded-2xl font-bold hover:bg-slate-50 transition-all">
-                                    {t.guestEntry}
-                                </button>
-                            </div>
+            if (!user) return (
+                <div className="min-h-screen flex items-center justify-center p-6">
+                    <div className="glass max-w-lg w-full p-12 rounded-[4rem] text-center shadow-2xl relative overflow-hidden">
+                        <button onClick={() => setLang(lang === 'zh' ? 'ms' : 'zh')} className="absolute top-8 right-10 text-xs font-bold text-indigo-600 uppercase tracking-widest">{lang === 'zh' ? 'BM' : 'ZH'}</button>
+                        <div className="gradient-bg w-24 h-24 rounded-[2rem] mx-auto mb-8 flex items-center justify-center text-white shadow-2xl rotate-6"><i data-lucide="sparkles" className="w-12 h-12"></i></div>
+                        <h1 className="text-3xl font-black text-slate-900 mb-2">{t.welcome}</h1>
+                        <p className="text-slate-400 font-bold mb-12 uppercase tracking-widest text-[10px]">{t.sub}</p>
+                        <div className="space-y-4">
+                            <button onClick={() => login('google')} className="w-full py-5 bg-slate-900 text-white rounded-3xl font-bold flex items-center justify-center gap-3 shadow-xl hover:bg-indigo-600 transition-all"><img src="https://www.google.com/favicon.ico" className="w-5 h-5 brightness-200" /> {t.google}</button>
+                            <button onClick={() => login('guest')} className="w-full py-5 bg-white text-slate-500 border border-slate-100 rounded-3xl font-bold hover:bg-slate-50 transition-all">{t.guest}</button>
                         </div>
                     </div>
-                );
-            }
+                </div>
+            );
 
             return (
-                <div className="max-w-7xl mx-auto px-6 py-8 animate-in fade-in duration-500">
-                    {/* Header */}
-                    <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-                        <div className="flex items-center gap-4">
-                            <div className="gradient-bg p-2 rounded-xl text-white shadow-lg"><i data-lucide="gem" className="w-6 h-6"></i></div>
+                <div className="max-w-7xl mx-auto px-6 py-10 animate-in fade-in duration-700">
+                    {/* Nav */}
+                    <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+                        <div className="flex items-center gap-5">
+                            <div className="gradient-bg p-3 rounded-2xl text-white shadow-xl"><i data-lucide="gem" className="w-7 h-7"></i></div>
                             <div>
-                                <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gemini Hub</h1>
-                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{t.tagline}</p>
+                                <h1 className="text-3xl font-black text-slate-900 tracking-tighter">LDP Gemini Hub</h1>
+                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">{t.tagline}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            {isAdmin && <span className="bg-rose-100 text-rose-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm">{t.adminTag}</span>}
-                            <button onClick={() => setLang(lang === 'zh' ? 'ms' : 'zh')} className="glass px-4 py-2 rounded-full text-xs font-bold text-indigo-600 flex items-center gap-2 hover:bg-white transition-all">
-                                <i data-lucide="languages" className="w-4 h-4"></i> {t.langSwitch}
-                            </button>
-                            {!user.isAnonymous ? (
-                                <div className="flex items-center gap-3 glass p-1.5 pr-4 rounded-full border-white/40">
-                                    {user.photoURL && <img src={user.photoURL} className="w-8 h-8 rounded-full border-2 border-white" alt="profile" />}
-                                    <span className="text-xs font-bold truncate max-w-[100px]">{user.displayName}</span>
-                                    <button onClick={logout} className="text-slate-300 hover:text-red-500 transition-colors"><i data-lucide="log-out" className="w-4 h-4"></i></button>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-2 text-slate-400 text-xs font-bold px-3 py-2">
-                                    <i data-lucide="user-x" className="w-4 h-4"></i> Guest <button onClick={logout} className="ml-2 text-indigo-600">Login</button>
-                                </div>
-                            )}
-                            {!user.isAnonymous && (
-                                <button onClick={() => setShowModal(true)} className="px-6 py-3 gradient-bg text-white font-extrabold rounded-2xl shadow-lg hover:opacity-90 transition-all flex items-center gap-2 text-sm">
-                                    <i data-lucide="plus" className="w-4 h-4"></i> {t.btnPublish}
-                                </button>
-                            )}
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => setLang(lang === 'zh' ? 'ms' : 'zh')} className="glass px-5 py-2.5 rounded-full text-xs font-bold text-indigo-600 flex items-center gap-2 hover:bg-white transition-all shadow-sm"><i data-lucide="languages" className="w-4 h-4"></i> {lang === 'zh' ? 'BM' : 'ZH'}</button>
+                            {!user.isAnonymous && <button onClick={() => setModalMode('create')} className="px-7 py-3 gradient-bg text-white font-black rounded-2xl shadow-xl hover:scale-105 transition-all text-sm">{t.publish}</button>}
+                            <div className="flex items-center gap-3 glass p-1.5 pr-5 rounded-full">
+                                {user.photoURL && <img src={user.photoURL} className="w-9 h-9 rounded-full border-2 border-white shadow-sm" />}
+                                <span className="text-xs font-black truncate max-w-[120px]">{user.displayName || 'Guest'}</span>
+                                <button onClick={() => signOut(auth)} className="text-slate-300 hover:text-red-500"><i data-lucide="log-out" className="w-4 h-4"></i></button>
+                            </div>
                         </div>
                     </header>
 
-                    {/* Dashboard */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
                         {[
-                            { label: t.dashboard.projects, val: globalStats.totalProjects || 0, icon: "package", color: "text-blue-500" },
-                            { label: t.dashboard.views, val: globalStats.totalViews || 0, icon: "eye", color: "text-emerald-500" },
-                            { label: t.dashboard.clicks, val: globalStats.totalClicks || 0, icon: "mouse-pointer-2", color: "text-purple-500" },
-                            { label: t.dashboard.my, val: projects.filter(p => p.creatorId === user.uid).length, icon: "medal", color: "text-amber-500", bg: "gradient-bg text-white" }
-                        ].map((s, idx) => (
-                            <div key={idx} className={`${s.bg || 'glass'} p-6 rounded-[2.5rem] transition-all shadow-sm`}>
-                                <div className={`${s.bg ? 'text-white/70' : 'text-slate-400'} text-[10px] font-black uppercase tracking-[0.2em] mb-2`}>{s.label}</div>
-                                <div className="text-3xl font-black flex items-baseline gap-2">{s.val} <span className={`${s.bg ? 'text-white/50' : s.color} text-sm`}><i data-lucide={s.icon} className="w-4 h-4"></i></span></div>
+                            { label: t.projects, val: globalStats.totalProjects || 0, icon: "package", color: "text-blue-500" },
+                            { label: t.views, val: globalStats.totalViews || 0, icon: "eye", color: "text-emerald-500" },
+                            { label: t.clicks, val: globalStats.totalClicks || 0, icon: "mouse-pointer-click", color: "text-purple-500" },
+                            { label: "My Impact", val: projects.filter(p => p.creatorId === user.uid).length, icon: "award", color: "text-amber-500", active: true }
+                        ].map((s, i) => (
+                            <div key={i} className={`p-8 rounded-[3rem] ${s.active ? 'gradient-bg text-white shadow-2xl' : 'glass shadow-sm'} transition-all`}>
+                                <div className={`text-[10px] font-black uppercase tracking-widest mb-3 ${s.active ? 'text-white/60' : 'text-slate-400'}`}>{s.label}</div>
+                                <div className="text-4xl font-black flex items-center gap-3">{s.val} <i data-lucide={s.icon} className={`w-5 h-5 ${s.active ? 'text-white/40' : s.color}`}></i></div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Advanced Filter with Category */}
-                    <div className="flex flex-wrap items-center gap-3 mb-10 overflow-x-auto pb-4 hide-scrollbar">
-                        <div className="glass p-1 rounded-2xl flex gap-1 whitespace-nowrap">
-                            {['All', ...SUBJECTS.slice(0,5)].map(s => (
-                                <button key={s} onClick={() => setFilter({...filter, subject: s})} className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${filter.subject === s ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>{s === 'All' ? t.filter.allSub : s}</button>
+                    {/* Filter */}
+                    <div className="flex flex-wrap gap-4 mb-12">
+                        <div className="glass p-1.5 rounded-2xl flex gap-1 overflow-x-auto hide-scrollbar max-w-full">
+                            {['All', ...SUBJECTS.slice(0, 5)].map(s => (
+                                <button key={s} onClick={() => setFilter({...filter, subject: s})} className={`px-6 py-3 rounded-xl text-xs font-black transition-all ${filter.subject === s ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>{s === 'All' ? t.filter.allSub : s}</button>
                             ))}
                         </div>
-                        <select onChange={(e) => setFilter({...filter, year: e.target.value})} className="px-5 py-3 rounded-2xl glass font-bold text-xs outline-none focus:ring-2 ring-indigo-500 h-12">
+                        <select onChange={e => setFilter({...filter, year: e.target.value})} className="px-6 py-4 rounded-2xl glass font-black text-xs outline-none focus:ring-2 ring-indigo-500 h-14 min-w-[140px] uppercase tracking-tighter">
                             <option value="All">{t.filter.allYear}</option>
                             {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
-                        <select onChange={(e) => setFilter({...filter, type: e.target.value})} className="px-5 py-3 rounded-2xl glass font-bold text-xs outline-none focus:ring-2 ring-indigo-500 h-12">
+                        <select onChange={e => setFilter({...filter, type: e.target.value})} className="px-6 py-4 rounded-2xl glass font-black text-xs outline-none focus:ring-2 ring-indigo-500 h-14 min-w-[140px] uppercase tracking-tighter">
                             <option value="All">{t.filter.allType}</option>
-                            {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                            {TYPES.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
 
-                    {/* Bento Gallery */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {/* Bento Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                         {loading ? (
-                            <div className="col-span-full py-32 text-center text-slate-300 animate-pulse font-bold tracking-widest">LOADING...</div>
+                            <div className="col-span-full py-40 text-center font-black tracking-[0.5em] text-slate-200">SYNCING RESOURCES...</div>
                         ) : filteredProjects.length === 0 ? (
-                            <div className="col-span-full py-32 text-center glass rounded-[3rem] border-dashed border-2 text-slate-300 font-bold uppercase tracking-widest">{t.noData}</div>
+                            <div className="col-span-full py-40 text-center glass rounded-[4rem] border-dashed border-2 text-slate-300 font-black uppercase tracking-widest">{t.noData}</div>
                         ) : (
-                            filteredProjects.map((p) => {
-                                const hasVoted = p.votedUsers?.includes(user.uid);
+                            filteredProjects.map(p => {
+                                const visual = getVisualSet(p.name, p.subject);
+                                const voted = p.votedUsers?.includes(user.uid);
                                 return (
-                                    <div key={p.id} className="bento-card group glass rounded-[2.5rem] p-8 flex flex-col shadow-sm relative">
-                                        {/* Admin Actions */}
-                                        {isAdmin && (
-                                            <button onClick={() => handleDelete(p.id)} className="absolute top-4 right-4 text-slate-200 hover:text-rose-500 p-2 bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <i data-lucide="trash-2" className="w-4 h-4"></i>
-                                            </button>
-                                        )}
-                                        
-                                        <div className="flex flex-col gap-3 mb-6">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex gap-2 flex-wrap">
-                                                    <span className="px-3 py-1 bg-white text-indigo-500 text-[10px] font-black rounded-lg shadow-sm">#{p.subject}</span>
-                                                    <span className="px-3 py-1 bg-white text-emerald-500 text-[10px] font-black rounded-lg shadow-sm">#{p.type}</span>
+                                    <div key={p.id} className={`bento-card relative glass rounded-[3.5rem] p-10 flex flex-col group ${visual.light}/30`}>
+                                        {/* Card Visual Header */}
+                                        <div className="flex justify-between items-start mb-10">
+                                            <div className={`${visual.color} p-4 rounded-3xl text-white shadow-lg shadow-${visual.color.split('-')[1]}-200/50`}><i data-lucide={visual.icon} className="w-8 h-8"></i></div>
+                                            <div className="flex flex-col items-end gap-2">
+                                                <div className="flex gap-1">
+                                                    {[1,2,3,4,5].map(s => (
+                                                        <button key={s} disabled={voted} onClick={() => handleRate(p, s)} className={`transition-all ${voted ? 'cursor-default' : 'hover:scale-125'}`}>
+                                                            <i data-lucide="star" className={`w-4 h-4 ${voted ? (s <= Math.floor(p.stars) ? 'star-active fill-current' : 'star-empty') : (s <= Math.floor(p.stars) ? 'star-active fill-current' : 'star-empty hover:star-active')}`}></i>
+                                                        </button>
+                                                    ))}
                                                 </div>
-                                                <span className="px-3 py-1 bg-white text-slate-400 text-[10px] font-black rounded-lg shadow-sm">#{p.year}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <StarRating rating={p.stars || 0} />
-                                                <span className="text-[10px] font-black text-slate-400">({p.ratingCount || 0})</span>
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score: {p.stars || 0} ({p.ratingCount || 0})</span>
                                             </div>
                                         </div>
-                                        
-                                        <h3 className="text-xl font-black text-slate-800 mb-2 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-1">{p.name}</h3>
-                                        <p className="text-slate-400 text-[10px] font-medium mb-8 truncate italic">{p.link}</p>
-                                        
-                                        <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/50">
+
+                                        <div className="mb-8">
+                                            <div className="flex gap-2 mb-3">
+                                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${visual.text} ${visual.light} border border-${visual.color.split('-')[1]}-100`}>#{p.subject}</span>
+                                                <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter bg-slate-100 text-slate-400">#{p.year}</span>
+                                            </div>
+                                            <h3 className="text-2xl font-black text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors mb-2">{p.name}</h3>
+                                            <p className="text-slate-400 text-xs font-bold truncate opacity-60">{p.link}</p>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="mt-auto flex items-center justify-between pt-8 border-t border-white/60">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center overflow-hidden shadow-sm border border-slate-100">
-                                                    {p.creatorPhoto ? <img src={p.creatorPhoto} alt="creator" /> : <i data-lucide="user" className="w-5 h-5 text-slate-200"></i>}
+                                                <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center overflow-hidden shadow-sm border border-slate-50">
+                                                    {p.creatorPhoto ? <img src={p.creatorPhoto} /> : <i data-lucide="user" className="w-5 h-5 text-slate-200"></i>}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">Created By</span>
-                                                    <span className="text-xs font-bold text-slate-700 truncate max-w-[100px]">{p.creatorName}</span>
+                                                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Curator</span>
+                                                    <span className="text-xs font-black text-slate-600 truncate max-w-[90px]">{p.creatorName}</span>
                                                 </div>
                                             </div>
-                                            <a href={p.link} target="_blank" onClick={() => trackClick(p.id)} className="p-4 bg-slate-900 text-white rounded-2xl hover:bg-indigo-600 transition-all shadow-xl active:scale-95">
-                                                <i data-lucide="play" className="w-5 h-5 fill-current"></i>
-                                            </a>
-                                        </div>
-                                        
-                                        {/* Voting Interaction */}
-                                        <div className="mt-6 flex items-center justify-between px-2">
-                                            <div className="flex gap-1.5">
-                                                {[1,2,3,4,5].map(s => (
-                                                    <button key={s} disabled={hasVoted} onClick={() => handleRate(p.id, p.stars || 0, p.ratingCount || 0, p.votedUsers, s)} 
-                                                        className={`transition-all ${hasVoted ? 'cursor-not-allowed text-slate-200' : 'text-slate-200 hover:text-yellow-400 hover:scale-125'}`}>
-                                                        <i data-lucide="star" className={`w-5 h-5 ${hasVoted && s <= Math.floor(p.stars) ? 'star-filled fill-current' : ''}`}></i>
-                                                    </button>
-                                                ))}
+                                            <div className="flex gap-2">
+                                                {isAdmin && (
+                                                    <div className="flex gap-1">
+                                                        <button onClick={() => { setEditingProject(p); setForm(p); setModalMode('edit'); }} className="p-3 glass text-slate-400 hover:text-indigo-600 rounded-2xl transition-all shadow-sm"><i data-lucide="edit-3" className="w-5 h-5"></i></button>
+                                                        <button onClick={() => handleDelete(p.id)} className="p-3 glass text-slate-400 hover:text-red-500 rounded-2xl transition-all shadow-sm"><i data-lucide="trash-2" className="w-5 h-5"></i></button>
+                                                    </div>
+                                                )}
+                                                <a href={p.link} target="_blank" onClick={() => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'projects', p.id), { clicks: increment(1) })} className="p-5 bg-slate-900 text-white rounded-3xl hover:bg-indigo-600 transition-all shadow-xl hover:scale-110 active:scale-95"><i data-lucide="play" className="w-6 h-6 fill-current"></i></a>
                                             </div>
-                                            <div className="text-[10px] font-black text-slate-300 flex items-center gap-1"><i data-lucide="mouse-pointer-click" className="w-3 h-3"></i> {p.clicks || 0}</div>
                                         </div>
                                     </div>
                                 );
@@ -431,52 +321,38 @@
                         )}
                     </div>
 
-                    {/* Footer */}
-                    <footer className="mt-24 py-12 border-t border-slate-200 text-center flex flex-col items-center gap-4">
-                        <div className="w-12 h-1 bg-indigo-600 rounded-full mb-2"></div>
-                        <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em]">LDP Gemini SJK (C) KUO KUANG 2</p>
-                    </footer>
+                    <footer className="mt-32 mb-10 text-center font-black text-slate-300 text-[11px] uppercase tracking-[0.5em]">LDP Gemini SJK (C) KUO KUANG 2</footer>
 
                     {/* Modal */}
-                    {showModal && (
-                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-center justify-center p-6">
-                            <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-                                <div className="p-10 gradient-bg text-white relative text-left">
-                                    <h3 className="text-3xl font-black mb-2 leading-tight">{t.modal.title}</h3>
-                                    <p className="text-indigo-100 font-medium">{t.modal.sub}</p>
+                    {modalMode && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+                            <div className="bg-white w-full max-w-xl rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+                                <div className="p-12 gradient-bg text-white relative">
+                                    <h3 className="text-3xl font-black mb-2">{modalMode === 'edit' ? t.edit : t.modalTitle}</h3>
+                                    <p className="text-indigo-100 font-bold text-xs uppercase tracking-widest opacity-80">{t.modalSub}</p>
                                 </div>
-                                <form onSubmit={handleSubmit} className="p-10 space-y-6 text-left">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="col-span-full">
-                                            <label className="block text-[10px] font-black text-slate-300 uppercase mb-2 tracking-widest">{t.modal.name}</label>
-                                            <input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} type="text" placeholder="e.g. Space Math Challenge" className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 ring-indigo-500 outline-none font-bold" />
-                                        </div>
-                                        <div className="col-span-full">
-                                            <label className="block text-[10px] font-black text-slate-300 uppercase mb-2 tracking-widest">{t.modal.link}</label>
-                                            <input required value={form.link} onChange={e => setForm({...form, link: e.target.value})} type="url" placeholder="https://..." className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 ring-indigo-500 outline-none font-bold" />
+                                <form onSubmit={handleSave} className="p-12 space-y-7">
+                                    <div className="space-y-6">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-300 uppercase mb-3 tracking-widest">{t.placeholderName}</label>
+                                            <input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full px-6 py-5 rounded-3xl bg-slate-50 border-none font-bold outline-none focus:ring-2 ring-indigo-500" />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-300 uppercase mb-2 tracking-widest">{t.modal.subLabel}</label>
-                                            <select value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold">
-                                                {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                                            </select>
+                                            <label className="block text-[10px] font-black text-slate-300 uppercase mb-3 tracking-widest">{t.placeholderLink}</label>
+                                            <input required value={form.link} onChange={e => setForm({...form, link: e.target.value})} type="url" className="w-full px-6 py-5 rounded-3xl bg-slate-50 border-none font-bold outline-none focus:ring-2 ring-indigo-500" />
                                         </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-slate-300 uppercase mb-2 tracking-widest">{t.modal.yearLabel}</label>
-                                            <select value={form.year} onChange={e => setForm({...form, year: e.target.value})} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold">
-                                                {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="col-span-full">
-                                            <label className="block text-[10px] font-black text-slate-300 uppercase mb-2 tracking-widest">{t.modal.typeLabel}</label>
-                                            <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold">
-                                                {TYPES.map(y => <option key={y} value={y}>{y}</option>)}
-                                            </select>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            {[{l: "Subject", k: "subject", o: SUBJECTS}, {l: "Year", k: "year", o: YEARS}, {l: "Type", k: "type", o: TYPES}].map(f => (
+                                                <div key={f.k}>
+                                                    <label className="block text-[10px] font-black text-slate-300 uppercase mb-2 tracking-widest">{f.l}</label>
+                                                    <select value={form[f.k]} onChange={e => setForm({...form, [f.k]: e.target.value})} className="w-full px-4 py-4 rounded-2xl bg-slate-50 font-bold border-none outline-none">{f.o.map(opt => <option key={opt}>{opt}</option>)}</select>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                     <div className="flex gap-4 pt-6">
-                                        <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 text-slate-400 font-bold hover:text-slate-600">{t.modal.cancel}</button>
-                                        <button type="submit" className="flex-[2] py-4 gradient-bg text-white rounded-2xl font-black shadow-xl hover:opacity-90">{t.modal.confirm}</button>
+                                        <button type="button" onClick={() => setModalMode(null)} className="flex-1 py-5 text-slate-400 font-black uppercase text-xs tracking-widest">{lang === 'zh' ? '取消' : 'Cancel'}</button>
+                                        <button type="submit" className="flex-[2] py-5 gradient-bg text-white rounded-[2rem] font-black shadow-2xl hover:scale-105 transition-all">{modalMode === 'edit' ? t.btnUpdate : t.btnConfirm}</button>
                                     </div>
                                 </form>
                             </div>
