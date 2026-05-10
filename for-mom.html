@@ -25,7 +25,7 @@
             font-family: 'Ma Shan Zheng', cursive;
         }
 
-        /* 核心照片样式 */
+        /* 核心照片卡片样式 */
         .main-card {
             background: white;
             padding: 10px;
@@ -34,6 +34,11 @@
             border: 2px solid rgba(212, 175, 55, 0.3);
             transform: rotate(-1deg);
             transition: all 0.5s ease;
+            position: relative;
+            min-height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* 飘落物 */
@@ -77,15 +82,44 @@
             box-shadow: 0 4px 10px rgba(255, 133, 162, 0.3);
         }
 
-        .fade-in { animation: fadeIn 0.8s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        /* 切换动画 */
+        .photo-transition {
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+        }
+        .photo-hidden {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        /* 导航按钮 */
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff85a2;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 40;
+            border: none;
+            box-shadow: 0 4px 12px rgba(255, 133, 162, 0.2);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .nav-btn:active { background: #fff5f6; transform: translateY(-50%) scale(0.9); }
     </style>
 </head>
 <body class="flex flex-col items-center">
 
     <canvas id="interaction-canvas"></canvas>
 
-    <!-- 顶部装饰 -->
+    <!-- 顶部 -->
     <div class="w-full text-center py-8 z-10">
         <h2 class="text-pink-400 text-lg tracking-[0.2em] font-light">致 1N、2N、3N</h2>
         <h1 class="text-5xl font-calligraphy text-pink-500 mt-2">家长妈咪们</h1>
@@ -94,22 +128,33 @@
         </div>
     </div>
 
-    <!-- 核心内容区 -->
+    <!-- 核心区 -->
     <main class="w-full max-w-sm px-4 z-20 space-y-8">
         
-        <!-- 自动加载的照片 -->
-        <div class="main-card relative fade-in">
-            <img src="https://raw.githubusercontent.com/yquan77/teaching-tools/refs/heads/main/IMG_2594.jpg" 
-                 alt="母亲节合影" 
-                 class="w-full h-auto rounded-lg shadow-inner"
+        <div class="main-card relative" id="photo-card">
+            <!-- 导航按钮 -->
+            <button onclick="prevPhoto(event)" class="nav-btn -left-4">❮</button>
+            <button onclick="nextPhoto(event)" class="nav-btn -right-4">❯</button>
+
+            <!-- 照片显示：默认第一张 -->
+            <img id="display-img" 
+                 src="https://raw.githubusercontent.com/yquan77/teaching-tools/refs/heads/main/imagesformom/IMG_2594.jpg" 
+                 alt="班级照片" 
+                 class="w-full h-auto rounded-lg shadow-inner photo-transition"
                  onerror="handleImageError(this)">
             
-            <div class="absolute -bottom-2 -left-2 bg-white px-3 py-1 rounded-full shadow-md">
-                <span class="text-pink-500 font-bold text-xs">节日快乐 🌸</span>
+            <!-- 页码 -->
+            <div class="absolute -bottom-3 left-4 bg-white px-4 py-1 rounded-full shadow-md z-30 border border-pink-100">
+                <span id="photo-index" class="text-pink-500 font-bold text-xs italic">正在加载...</span>
+            </div>
+
+            <!-- 右上角小装饰 -->
+            <div class="absolute -top-3 -right-3 bg-pink-500 w-10 h-10 rounded-full flex items-center justify-center text-white shadow-lg z-30 border-2 border-white">
+                <span class="text-lg">📷</span>
             </div>
         </div>
 
-        <!-- 动态文案区 -->
+        <!-- 祝福语 -->
         <div class="message-box p-6 text-center">
             <p id="dynamic-wish" class="text-gray-700 text-lg leading-relaxed italic">
                 “感谢各位妈咪一直以来对班级工作的支持，祝您母亲节快乐！”
@@ -119,12 +164,12 @@
                     换一句心里话 ✨
                 </button>
                 <div class="heart-count-tag mt-2">
-                    已有 <span id="count">0</span> 位妈咪收到了爱心
+                    已有 <span id="count">0</span> 位妈咪送出了爱心
                 </div>
             </div>
         </div>
 
-        <!-- 互动按钮 -->
+        <!-- 互动 -->
         <div class="flex justify-center">
             <button onclick="sendLove(event)" class="bg-pink-500 hover:bg-pink-600 text-white w-20 h-20 rounded-full shadow-2xl flex items-center justify-center text-4xl animate-bounce">
                 ❤️
@@ -139,6 +184,49 @@
     </footer>
 
     <script>
+        /**
+         * 照片库配置：
+         * 根据你的 imagesformom 文件夹内容自动生成
+         */
+        const photos = [
+            "https://raw.githubusercontent.com/yquan77/teaching-tools/refs/heads/main/imagesformom/IMG_2594.jpg",
+            "https://raw.githubusercontent.com/yquan77/teaching-tools/refs/heads/main/imagesformom/IMG_6150.JPG",
+            "https://raw.githubusercontent.com/yquan77/teaching-tools/refs/heads/main/imagesformom/IMG_7338.jpg",
+            "https://raw.githubusercontent.com/yquan77/teaching-tools/refs/heads/main/imagesformom/IMG_9678.jpg"
+        ];
+
+        let currentPhotoIndex = 0;
+        const imgEl = document.getElementById('display-img');
+        const indexEl = document.getElementById('photo-index');
+
+        function updatePhoto() {
+            imgEl.classList.add('photo-hidden');
+            
+            setTimeout(() => {
+                imgEl.src = photos[currentPhotoIndex];
+                indexEl.innerText = `${currentPhotoIndex + 1} / ${photos.length} 张精彩瞬间`;
+                imgEl.onload = () => {
+                    imgEl.classList.remove('photo-hidden');
+                };
+            }, 300);
+        }
+
+        function nextPhoto(e) {
+            if(e) e.stopPropagation();
+            currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
+            updatePhoto();
+        }
+
+        function prevPhoto(e) {
+            if(e) e.stopPropagation();
+            currentPhotoIndex = (currentPhotoIndex - 1 + photos.length) % photos.length;
+            updatePhoto();
+        }
+
+        window.addEventListener('load', () => {
+            indexEl.innerText = `1 / ${photos.length} 张精彩瞬间`;
+        });
+
         const schoolWishes = [
             "“感谢各位妈咪一直以来对班级工作的支持，祝您母亲节快乐！”",
             "“每一个孩子的进步，都离不开您在背后的辛勤付出。您辛苦了！”",
@@ -151,7 +239,8 @@
         let count = 0;
 
         function handleImageError(img) {
-            console.error("图片链接可能不正确。");
+            console.warn("图片路径可能有误，请检查 GitHub 文件名大小写。");
+            // 备用展示
             img.src = 'https://images.unsplash.com/photo-1594042494541-269335099351?auto=format&fit=crop&q=80&w=800'; 
         }
 
@@ -216,8 +305,8 @@
         function sendLove(e) {
             count++;
             document.getElementById('count').innerText = count;
-            const x = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth/2;
-            const y = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight/2;
+            const x = (e.clientX || (e.touches && e.touches[0].clientX)) || window.innerWidth/2;
+            const y = (e.clientY || (e.touches && e.touches[0].clientY)) || window.innerHeight/2;
             for (let i = 0; i < 15; i++) {
                 particles.push(new LoveParticle(x, y));
             }
