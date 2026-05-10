@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LDP Gemini SJK (C) KUO KUANG 2 | Resource Hub</title>
+    <title>LDP Gemini SJK (C) KUO KUANG 2 | Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -11,39 +11,20 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #f4f7ff;
-            overflow-x: hidden;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fdfdff; }
         .mesh-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.15) 0px, transparent 50%),
-                        radial-gradient(at 100% 0%, rgba(147, 51, 234, 0.15) 0px, transparent 50%),
-                        radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
-                        radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.15) 0px, transparent 50%);
+            background: radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.12) 0px, transparent 50%),
+                        radial-gradient(at 100% 0%, rgba(147, 51, 234, 0.12) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.12) 0px, transparent 50%),
+                        radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.12) 0px, transparent 50%);
         }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-        .bento-card {
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            background: rgba(255, 255, 255, 0.95);
-        }
-        .bento-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
-            border-color: #6366f1;
-        }
+        .bento-card { transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1); cursor: pointer; }
+        .bento-card:hover { transform: translateY(-8px); border-color: #6366f1; }
+        .modal-blur { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); background: rgba(15, 23, 42, 0.4); }
         .star-active { fill: #f59e0b; color: #f59e0b; }
-        .gradient-text {
-            background: linear-gradient(135deg, #4f46e5, #9333ea);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .purple-gradient { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); }
     </style>
 </head>
 <body class="text-slate-900 min-h-screen">
@@ -80,19 +61,20 @@
 
         const ADMIN_EMAILS = ["yquan77@gmail.com", "yquan77@moe-dl.edu.my"];
 
-        const LANG_MAP = {
+        const LANGUAGES = {
             zh: {
                 subjects: ["数学", "科学", "国语", "华语", "英语", "设计与工艺", "历史", "伊斯兰教育", "道德教育", "美术", "音乐", "体健"],
                 years: ["一年级", "二年级", "三年级", "四年级", "五年级", "六年级"],
                 types: ["练习", "教学", "游戏", "工具"],
                 all: "全部",
-                stats: { projects: "累计作品", views: "全站访问", clicks: "试用次数", my: "我的贡献", totalUsage: "作品使用总量" },
+                stats: ["累计作品", "访客总量", "使用总量", "我的贡献"],
                 ui: {
                     h1: "AI 教学资源库", tagline: "意念编程 • 创意无限", loginHint: "登录账号以发布您的 AI 作品",
                     btnLogin: "立即通过 Google 登录", btnGuest: "以访客身份进入", logout: "登出", publish: "发布作品",
-                    noData: "暂无数据", detail: "点击查看", score: "评分", plays: "次点击",
-                    formName: "作品名称", formLink: "链接地址", formSub: "科目", formYear: "年级", formType: "分类",
-                    save: "立即发布", cancel: "取消", admin: "管理员", welcome: "欢迎回来"
+                    noData: "没有找到相关作品", detail: "点击查看详情", score: "评分", plays: "次使用",
+                    formName: "作品名称", formLink: "链接地址", formSub: "科目", formYear: "年级", formType: "种类",
+                    confirm: "确认提交", cancel: "取消", close: "关闭窗口", master: "管理员模式", play: "开始体验",
+                    welcomeBack: "欢迎回来!"
                 }
             },
             ms: {
@@ -100,24 +82,25 @@
                 years: ["Tahun 1", "Tahun 2", "Tahun 3", "Tahun 4", "Tahun 5", "Tahun 6"],
                 types: ["Latihan", "Pengajaran", "Permainan", "Alatan"],
                 all: "Semua",
-                stats: { projects: "Jumlah Karya", views: "Jumlah Lawatan", clicks: "Klik", my: "Sumbangan", totalUsage: "Penggunaan Keseluruhan" },
+                stats: ["Jumlah Karya", "Jumlah Pelawat", "Jumlah Penggunaan", "Sumbangan"],
                 ui: {
-                    h1: "Hab Sumber AI", tagline: "Vibe Coding • Tanpa Had", loginHint: "Log masuk untuk menghantar karya anda",
+                    h1: "Hab Sumber AI", tagline: "Vibe Coding • Tanpa Had", loginHint: "Log masuk untuk hantar karya anda",
                     btnLogin: "Log Masuk Google", btnGuest: "Masuk Tetamu", logout: "Keluar", publish: "Hantar Karya",
-                    noData: "Tiada Data", detail: "Butiran", score: "Skor", plays: "klik",
-                    formName: "Nama Karya", formLink: "Pautan URL", formSub: "Subjek", formYear: "Tahun", formType: "Kategori",
-                    save: "Simpan", cancel: "Batal", admin: "Admin", welcome: "Selamat Kembali"
+                    noData: "Tiada karya ditemui", detail: "Klik Butiran", score: "Skor", plays: "klik",
+                    formName: "Nama Karya", formLink: "Pautan", formSub: "Subjek", formYear: "Tahun", formType: "Kategori",
+                    confirm: "Hantar", cancel: "Batal", close: "Tutup", master: "Mode Admin", play: "Cuba Main",
+                    welcomeBack: "Selamat Kembali!"
                 }
             }
         };
 
         const getVisual = (name="", sub="") => {
             const s = (name + sub).toLowerCase();
-            if (s.includes("数学") || s.includes("matematik")) return { i: "calculator", c: "bg-blue-600", l: "bg-blue-50/50", t: "text-blue-600", b: "border-blue-100" };
-            if (s.includes("科学") || s.includes("sains")) return { i: "flask-conical", c: "bg-emerald-600", l: "bg-emerald-50/50", t: "text-emerald-600", b: "border-emerald-100" };
-            if (s.includes("游戏") || s.includes("game")) return { i: "gamepad-2", c: "bg-purple-600", l: "bg-purple-50/50", t: "text-purple-600", b: "border-purple-100" };
-            if (s.includes("文") || s.includes("bahasa")) return { i: "book-open", c: "bg-orange-600", l: "bg-orange-50/50", t: "text-orange-600", b: "border-orange-100" };
-            return { i: "sparkles", c: "bg-indigo-600", l: "bg-indigo-50/50", t: "text-indigo-600", b: "border-indigo-100" };
+            if (s.includes("数学") || s.includes("matematik")) return { i: "calculator", c: "bg-blue-600", l: "bg-blue-50", t: "text-blue-600" };
+            if (s.includes("科学") || s.includes("sains")) return { i: "flask-conical", c: "bg-emerald-600", l: "bg-emerald-50", t: "text-emerald-600" };
+            if (s.includes("游戏") || s.includes("game")) return { i: "gamepad-2", c: "bg-purple-600", l: "bg-purple-50", t: "text-purple-600" };
+            if (s.includes("文") || s.includes("bahasa")) return { i: "book-open", c: "bg-orange-600", l: "bg-orange-50", t: "text-orange-600" };
+            return { i: "sparkles", c: "bg-indigo-600", l: "bg-indigo-50", t: "text-indigo-600" };
         };
 
         const App = () => {
@@ -126,12 +109,12 @@
             const [projects, setProjects] = useState([]);
             const [stats, setStats] = useState({ totalViews: 0, totalClicks: 0, totalProjects: 0 });
             const [loading, setLoading] = useState(true);
-            const [modal, setModal] = useState(null); // 'create' | 'edit' | 'detail'
+            const [modal, setModal] = useState(null); 
             const [selectedP, setSelectedP] = useState(null);
             const [form, setForm] = useState({ name: '', link: '', subject: '数学', year: '一年级', type: '游戏' });
             const [filters, setFilters] = useState({ subject: 'All', year: 'All', type: 'All' });
 
-            const t = LANG_MAP[lang];
+            const t = LANGUAGES[lang];
             const isAdmin = useMemo(() => user && ADMIN_EMAILS.includes(user.email), [user]);
 
             useEffect(() => {
@@ -153,6 +136,24 @@
 
             useEffect(() => { lucide.createIcons(); }, [user, projects, loading, modal, lang, selectedP]);
 
+            const handleSave = async (e) => {
+                e.preventDefault();
+                if(modal === 'edit') await updateDoc(doc(db, 'artifacts', currentAppId, 'public', 'data', 'projects', form.id), form);
+                else {
+                    await addDoc(collection(db, 'artifacts', currentAppId, 'public', 'data', 'projects'), { ...form, creatorId: user.uid, creatorName: user.displayName || 'Guru', creatorPhoto: user.photoURL || null, timestamp: Date.now(), views: 0, clicks: 0, stars: 0, ratingCount: 0, votedUsers: [] });
+                    await updateDoc(doc(db, 'artifacts', currentAppId, 'public', 'data', 'stats', 'global'), { totalProjects: increment(1) });
+                }
+                setModal(null);
+            };
+
+            const handleAction = async (p) => {
+                const pRef = doc(db, 'artifacts', currentAppId, 'public', 'data', 'projects', p.id);
+                const gRef = doc(db, 'artifacts', currentAppId, 'public', 'data', 'stats', 'global');
+                await updateDoc(pRef, { clicks: increment(1) });
+                await updateDoc(gRef, { totalClicks: increment(1) });
+                window.open(p.link, '_blank');
+            };
+
             const handleRate = async (p, val) => {
                 if (p.votedUsers?.includes(user.uid)) return;
                 const newStars = ((p.stars * p.ratingCount) + val) / (p.ratingCount + 1);
@@ -161,21 +162,22 @@
                 setSelectedP(prev => ({...prev, stars: Number(newStars.toFixed(1)), ratingCount: (p.ratingCount + 1), votedUsers: [...(p.votedUsers||[]), user.uid]}));
             };
 
-            const filtered = projects.filter(p => (filters.subject === 'All' || p.subject === filters.subject) && (filters.year === 'All' || p.year === filters.year) && (filters.type === 'All' || p.type === filters.type));
+            const filtered = projects.filter(p => (filters.subject === 'All' || p.subject === filters.subject) || (lang === 'ms' && LANGUAGES.zh.subjects[LANGUAGES.ms.subjects.indexOf(p.subject)] === filters.subject));
 
             if (!user) return (
-                <div className="min-h-screen flex items-center justify-center p-6">
-                    <div className="glass-panel max-w-md w-full p-12 rounded-[4rem] text-center shadow-2xl relative border-white">
-                        <button onClick={() => setLang(lang === 'zh' ? 'ms' : 'zh')} className="absolute top-8 right-10 text-[11px] font-black text-indigo-600 bg-white px-4 py-2 rounded-full border border-indigo-100 uppercase">{lang==='zh'?'BM':'CN'}</button>
-                        <div className="bg-indigo-600 w-24 h-24 rounded-[2rem] mx-auto mb-10 flex items-center justify-center text-white shadow-2xl rotate-6"><i data-lucide="sparkles" className="w-12 h-12"></i></div>
-                        <h1 className="text-4xl font-black mb-3 tracking-tight">{t.ui.h1}</h1>
-                        <p className="text-slate-400 font-bold mb-12 text-xs tracking-widest uppercase">{t.ui.tagline}</p>
+                <div className="min-h-screen flex items-center justify-center p-6 relative">
+                    <div className="bg-white/80 backdrop-blur-xl max-w-md w-full p-12 rounded-[4rem] text-center shadow-2xl relative border border-white">
+                        <button onClick={() => setLang(lang === 'zh' ? 'ms' : 'zh')} className="absolute top-8 right-10 text-[10px] font-black text-indigo-600 border border-indigo-100 px-4 py-1.5 rounded-full uppercase transition-all hover:bg-indigo-50">{lang==='zh'?'BAHASA MELAYU':'中文界面'}</button>
+                        <div className="bg-indigo-600 w-20 h-20 rounded-3xl mx-auto mb-10 flex items-center justify-center text-white shadow-xl rotate-6"><i data-lucide="sparkles" className="w-10 h-10"></i></div>
+                        <h1 className="text-3xl font-black mb-2 tracking-tight text-slate-900">{t.ui.h1}</h1>
+                        <p className="text-slate-400 font-bold mb-12 text-[10px] tracking-[0.2em] uppercase">{t.ui.tagline}</p>
                         <div className="space-y-4">
-                            <button onClick={()=>signInWithPopup(auth, provider)} className="w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black flex items-center justify-center gap-3 shadow-xl hover:bg-indigo-600 transition-all text-sm uppercase tracking-wide">
-                                <img src="https://www.google.com/favicon.ico" className="w-5 h-5 brightness-200" /> {t.ui.btnLogin}
+                            <button onClick={()=>signInWithPopup(auth, provider)} className="w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black flex items-center justify-center gap-3 shadow-xl hover:bg-indigo-600 transition-all text-sm uppercase tracking-widest">
+                                <img src="https://www.google.com/favicon.ico" className="w-5 h-5 brightness-200" /> 
+                                <span>{t.ui.btnLogin}</span>
                             </button>
-                            <button onClick={()=>signInAnonymously(auth)} className="w-full py-5 bg-white text-slate-600 border border-slate-200 rounded-[2rem] font-bold text-sm uppercase tracking-wide">
-                                {t.ui.btnGuest}
+                            <button onClick={()=>signInAnonymously(auth)} className="w-full py-5 bg-white text-slate-600 border border-slate-200 rounded-[2rem] font-bold text-sm uppercase tracking-widest transition-all hover:bg-slate-50">
+                                <span>{t.ui.btnGuest}</span>
                             </button>
                         </div>
                     </div>
@@ -183,36 +185,32 @@
             );
 
             return (
-                <div className="max-w-7xl mx-auto px-6 py-10 pb-40 relative">
-                    {/* Header */}
-                    <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+                <div className="max-w-7xl mx-auto px-6 py-10">
+                    <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                         <div className="flex items-center gap-5">
-                            <div className="bg-slate-900 p-4 rounded-2xl text-white shadow-xl rotate-3"><i data-lucide="gem" className="w-8 h-8"></i></div>
-                            <div>
-                                <h1 className="text-3xl font-black tracking-tighter">Gemini Hub</h1>
-                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">{t.ui.tagline}</p>
-                            </div>
+                            <div className="bg-slate-900 p-3.5 rounded-2xl text-white shadow-xl rotate-3"><i data-lucide="gem" className="w-6 h-6"></i></div>
+                            <div><h1 className="text-2xl font-black tracking-tighter text-slate-900">Gemini Hub</h1><p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.3em]">{t.ui.tagline}</p></div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <button onClick={() => setLang(lang === 'zh' ? 'ms' : 'zh')} className="glass-panel px-6 py-3 rounded-full text-xs font-black text-indigo-600 border-white hover:bg-white transition-all uppercase">
+                            <button onClick={() => setLang(lang === 'zh' ? 'ms' : 'zh')} className="bg-white border-2 border-slate-100 px-5 py-2.5 rounded-full text-[11px] font-black text-indigo-600 hover:bg-slate-50 transition-all uppercase tracking-tighter">
                                 <i data-lucide="languages" className="w-4 h-4 inline mr-2"></i> {lang === 'zh' ? 'BAHASA' : '中文'}
                             </button>
-                            {!user.isAnonymous && <button onClick={()=>setModal('create')} className="px-8 py-3.5 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-100 text-xs uppercase tracking-widest hover:scale-105 transition-all">{t.ui.publish}</button>}
-                            <div className="flex items-center gap-3 glass-panel p-1.5 pr-6 rounded-full border-white">
-                                {user.photoURL ? <img src={user.photoURL} className="w-9 h-9 rounded-full" /> : <div className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center"><i data-lucide="user" className="w-4 h-4 text-slate-400"></i></div>}
-                                <span className="text-[10px] font-black truncate max-w-[100px] uppercase">{user.displayName || t.ui.guest}</span>
-                                <button onClick={()=>signOut(auth)} className="text-slate-300 hover:text-red-500"><i data-lucide="log-out" className="w-4 h-4"></i></button>
+                            {!user.isAnonymous && <button onClick={()=>setModal('create')} className="px-7 py-3 bg-indigo-600 text-white font-black rounded-2xl shadow-lg text-[11px] uppercase tracking-widest hover:scale-105 transition-all">{t.ui.publish}</button>}
+                            <div className="flex items-center gap-2 bg-white p-1 pr-4 rounded-full border shadow-sm">
+                                {user.photoURL ? <img src={user.photoURL} className="w-8 h-8 rounded-full shadow-sm" /> : <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center"><i data-lucide="user" className="w-4 h-4 text-slate-400"></i></div>}
+                                <span className="text-[10px] font-black truncate max-w-[80px] uppercase text-slate-600">{user.displayName || t.ui.guest}</span>
+                                <button onClick={()=>signOut(auth)} className="text-slate-300 hover:text-red-500 ml-1"><i data-lucide="log-out" className="w-3.5 h-3.5"></i></button>
                             </div>
                         </div>
                     </header>
 
-                    {/* Login Banner for Guests */}
+                    {/* Login Banner for Guests - RESTORED PURPLE GRADIENT */}
                     {user.isAnonymous && (
-                        <div className="mb-14 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 text-white shadow-2xl shadow-indigo-100">
+                        <div className="mb-14 purple-gradient rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 text-white shadow-2xl shadow-indigo-100 animate-in slide-in-from-top-4 duration-500">
                             <div className="flex items-center gap-6">
                                 <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-md"><i data-lucide="user-plus" className="w-8 h-8"></i></div>
                                 <div>
-                                    <h4 className="text-lg font-black uppercase tracking-tight">{t.ui.welcome}!</h4>
+                                    <h4 className="text-lg font-black uppercase tracking-tight">{t.ui.welcomeBack}</h4>
                                     <p className="font-bold text-sm text-indigo-100">{t.ui.loginHint}</p>
                                 </div>
                             </div>
@@ -220,135 +218,118 @@
                         </div>
                     )}
 
-                    {/* Main Filter Bar */}
-                    <div className="flex flex-wrap gap-4 mb-16 overflow-x-auto hide-scrollbar pb-2">
-                        <div className="bg-white/50 border border-white p-1.5 rounded-2xl flex gap-1 whitespace-nowrap shadow-sm">
-                            <button onClick={()=>setFilters({...filters, subject:'All'})} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${filters.subject==='All'?'bg-white shadow-md text-indigo-600':'text-slate-400 hover:text-slate-600'}`}>{t.all}</button>
-                            {t.subjects.slice(0, 6).map(s => (
-                                <button key={s} onClick={()=>setFilters({...filters, subject:s})} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${filters.subject===s?'bg-white shadow-md text-indigo-600':'text-slate-400 hover:text-slate-600'}`}>{s}</button>
-                            ))}
+                    <div className="flex flex-wrap gap-3 mb-10 overflow-x-auto hide-scrollbar pb-2">
+                        <div className="bg-slate-100/80 p-1.5 rounded-2xl flex gap-1 whitespace-nowrap border border-white shadow-sm">
+                            <button onClick={()=>setFilters({...filters, subject:'All'})} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${filters.subject==='All'?'bg-white shadow text-indigo-600':'text-slate-400 hover:text-slate-600'}`}>{t.all}</button>
+                            {t.subjects.map(s => <button key={s} onClick={()=>setFilters({...filters, subject:s})} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${filters.subject===s?'bg-white shadow text-indigo-600':'text-slate-400 hover:text-slate-600'}`}>{s}</button>)}
                         </div>
-                        <select onChange={e=>setFilters({...filters, year:e.target.value})} className="px-8 py-4 rounded-2xl bg-white border border-white font-black text-[10px] uppercase outline-none min-w-[150px] shadow-sm">{t.years.map(y=><option key={y} value={y}>{y}</option>)}<option value="All">{t.all} {t.ui.formYear}</option></select>
-                        <select onChange={e=>setFilters({...filters, type:e.target.value})} className="px-8 py-4 rounded-2xl bg-white border border-white font-black text-[10px] uppercase outline-none min-w-[150px] shadow-sm">{t.types.map(y=><option key={y} value={y}>{y}</option>)}<option value="All">{t.all} {t.ui.formType}</option></select>
                     </div>
 
-                    {/* Compact Bento Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-20">
-                        {loading ? <div className="col-span-full py-20 text-center font-black text-slate-200 tracking-[0.5em] animate-pulse uppercase">Syncing Cloud Hub...</div> : 
-                        filtered.length === 0 ? <div className="col-span-full py-40 text-center glass-panel rounded-[4rem] text-slate-300 font-black uppercase tracking-widest">{t.ui.noData}</div> : 
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-24">
+                        {loading ? <div className="col-span-full py-20 text-center font-black text-slate-300 tracking-[0.5em] animate-pulse">CONNECTING...</div> : 
+                        filtered.length === 0 ? <div className="col-span-full py-40 text-center border-2 border-dashed border-slate-200 rounded-[3rem] text-slate-300 font-black uppercase tracking-widest">{t.ui.noData}</div> : 
                         filtered.map(p => {
                             const v = getVisual(p.name, p.subject);
                             return (
-                                <div key={p.id} onClick={()=>{setSelectedP(p); setModal('detail');}} className={`bento-card group rounded-[2.5rem] p-5 flex flex-col cursor-pointer border-white border-2 relative ${v.l}`}>
+                                <div key={p.id} onClick={()=>{setSelectedP(p); setModal('detail');}} className="bento-card bg-white rounded-3xl p-5 flex flex-col border border-slate-100 relative group overflow-hidden shadow-sm">
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className={`${v.c} p-3 rounded-xl text-white shadow-lg group-hover:rotate-6 transition-transform`}><i data-lucide={v.i} className="w-5 h-5"></i></div>
-                                        <div className="flex items-center gap-1 text-[9px] font-black text-amber-500 bg-white/80 px-2 py-1 rounded-lg">
-                                            <i data-lucide="star" className="w-3 h-3 fill-current"></i> {p.stars || 0}
+                                        <div className={`${v.c} p-3 rounded-2xl text-white shadow-lg shadow-indigo-100 group-hover:rotate-6 transition-transform`}><i data-lucide={v.i} className="w-5 h-5"></i></div>
+                                        <div className="flex items-center gap-1 text-[9px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-md">
+                                            <i data-lucide="star" className="w-2.5 h-2.5 fill-current"></i> {p.stars || 0}
                                         </div>
                                     </div>
                                     <div className="mb-2">
-                                        <div className="flex flex-wrap gap-1 mb-2">
-                                            <span className={`text-[8px] font-black uppercase tracking-tighter ${v.t}`}>#{p.subject}</span>
-                                            <span className="text-[8px] font-black uppercase tracking-tighter text-slate-400">#{p.year}</span>
-                                        </div>
-                                        <h3 className="text-sm font-extrabold text-slate-800 line-clamp-2 leading-tight group-hover:text-indigo-600 h-10">{p.name}</h3>
+                                        <p className={`text-[8px] font-black uppercase mb-1 ${v.t}`}>#{p.subject}</p>
+                                        <h3 className="text-xs font-extrabold text-slate-800 line-clamp-2 leading-tight group-hover:text-indigo-600 transition-colors h-8">{p.name}</h3>
                                     </div>
-                                    <div className="mt-4 pt-3 border-t border-white flex items-center justify-between opacity-50 text-[8px] font-black uppercase tracking-tighter">
-                                        <span className="truncate max-w-[60px]">{p.creatorName}</span>
+                                    <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between opacity-50 text-[9px] font-black uppercase tracking-tighter">
+                                        <span className="truncate max-w-[50px]">{p.creatorName}</span>
                                         <span className="text-indigo-600">{t.ui.detail}</span>
                                     </div>
-                                    {isAdmin && (
-                                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100">
-                                            <button onClick={(e)=>{e.stopPropagation(); setForm(p); setModal('edit');}} className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-indigo-600 shadow-sm"><i data-lucide="edit" className="w-3 h-3"></i></button>
-                                            <button onClick={async (e)=>{e.stopPropagation(); if(confirm("Del?")){await deleteDoc(doc(db,'artifacts',currentAppId,'public','data','projects',p.id));await updateDoc(doc(db,'artifacts',currentAppId,'public','data','stats','global'),{totalProjects:increment(-1)});}}} className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-red-500 shadow-sm"><i data-lucide="trash" className="w-3 h-3"></i></button>
-                                        </div>
-                                    )}
                                 </div>
                             );
                         })}
                     </div>
 
-                    {/* NEW: Bottom Prominent Stats Section */}
-                    <section className="mt-20 pt-16 border-t border-indigo-100 flex flex-col items-center">
-                        <div className="bg-slate-900 text-white p-12 rounded-[4rem] w-full max-w-5xl shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px]"></div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative z-10 text-center">
-                                {[{l:t.stats.projects,v:stats.totalProjects, i:"box"},{l:t.stats.views,v:stats.totalViews, i:"eye"},{l:t.stats.totalUsage,v:stats.totalClicks, i:"trending-up"},{l:t.stats.my,v:projects.filter(p=>p.creatorId===user.uid).length, i:"award", a:true}].map((s,i)=>(
-                                    <div key={i} className={s.a ? "bg-indigo-600 p-6 rounded-[2rem]" : ""}>
-                                        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50 mb-4 flex items-center justify-center gap-2">
-                                            <i data-lucide={s.i} className="w-3 h-3"></i> {s.l}
-                                        </div>
-                                        <div className="text-4xl font-black tracking-tighter">{s.v || 0}</div>
-                                    </div>
-                                ))}
+                    <section className="mt-20 pt-20 border-t border-slate-200">
+                        <div className="bg-slate-900 text-white p-12 rounded-[4rem] w-full max-w-6xl mx-auto shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-around gap-12">
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px]"></div>
+                            
+                            <div className="text-center relative z-10">
+                                <p className="text-[11px] font-black uppercase tracking-[0.5em] text-white/30 mb-4 flex items-center justify-center gap-2"><i data-lucide="box" className="w-3.5 h-3.5"></i> {t.stats[0]}</p>
+                                <p className="text-6xl font-black tracking-tighter leading-none">{stats.totalProjects || 0}</p>
+                            </div>
+                            <div className="w-px h-20 bg-white/10 hidden md:block"></div>
+                            <div className="text-center relative z-10">
+                                <p className="text-[11px] font-black uppercase tracking-[0.5em] text-white/30 mb-4 flex items-center justify-center gap-2"><i data-lucide="eye" className="w-3.5 h-3.5"></i> {t.stats[1]}</p>
+                                <p className="text-6xl font-black tracking-tighter leading-none">{stats.totalViews || 0}</p>
+                            </div>
+                            <div className="w-px h-20 bg-white/10 hidden md:block"></div>
+                            <div className="text-center relative z-10">
+                                <p className="text-[11px] font-black uppercase tracking-[0.4em] text-indigo-400 mb-4 flex items-center justify-center gap-2"><i data-lucide="activity" className="w-3.5 h-3.5"></i> {t.stats[2]}</p>
+                                <p className="text-7xl font-black tracking-tighter leading-none text-white drop-shadow-2xl">{stats.totalClicks || 0}</p>
                             </div>
                         </div>
-                        <footer className="mt-16 text-center text-[11px] font-black text-slate-300 uppercase tracking-[0.5em] pb-10">LDP Gemini SJK (C) KUO KUANG 2</footer>
+                        <footer className="mt-20 text-center text-[12px] font-black text-slate-300 uppercase tracking-[0.6em] pb-12">LDP Gemini SJK (C) KUO KUANG 2</footer>
                     </section>
 
-                    {/* Detail Modal */}
+                    {/* Detail Modal with Backdrop Blur */}
                     {modal === 'detail' && selectedP && (
-                        <div className="fixed inset-0 z-[300] modal-overlay flex items-center justify-center p-6" onClick={()=>setModal(null)}>
-                            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 border-t-8 border-indigo-600" onClick={e=>e.stopPropagation()}>
-                                <div className={`p-12 ${getVisual(selectedP.name, selectedP.subject).l} text-left relative`}>
-                                    <button onClick={()=>setModal(null)} className="absolute top-8 right-10 bg-white p-3 rounded-full shadow-sm hover:scale-110 transition-all"><i data-lucide="x" className="w-5 h-5"></i></button>
+                        <div className="fixed inset-0 z-[300] modal-blur flex items-center justify-center p-6 animate-in fade-in duration-300" onClick={()=>setModal(null)}>
+                            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl overflow-hidden border-t-8 border-indigo-600" onClick={e=>e.stopPropagation()}>
+                                <div className={`p-12 ${getVisual(selectedP.name, selectedP.subject).l} relative`}>
+                                    <button onClick={()=>setModal(null)} className="absolute top-8 right-10 bg-white/50 p-3 rounded-full shadow-sm hover:scale-110 transition-all"><i data-lucide="x" className="w-5 h-5"></i></button>
                                     <div className="flex gap-2 mb-6">
                                         <span className="px-4 py-1.5 bg-white text-indigo-600 rounded-full text-[10px] font-black uppercase shadow-sm">#{selectedP.subject}</span>
                                         <span className="px-4 py-1.5 bg-white text-slate-400 rounded-full text-[10px] font-black uppercase shadow-sm">#{selectedP.year}</span>
                                     </div>
-                                    <h3 className="text-3xl font-black leading-tight mb-8 text-slate-900">{selectedP.name}</h3>
+                                    <h3 className="text-4xl font-black leading-tight mb-8 text-slate-900 tracking-tighter">{selectedP.name}</h3>
                                     <div className="flex items-center gap-4">
-                                        <img src={selectedP.creatorPhoto} className="w-12 h-12 rounded-2xl border-4 border-white shadow-md" />
-                                        <div className="flex flex-col"><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t.ui.author}</span><span className="font-extrabold text-slate-800">{selectedP.creatorName}</span></div>
+                                        <img src={selectedP.creatorPhoto} className="w-16 h-16 rounded-2xl border-4 border-white shadow-md" />
+                                        <div className="flex flex-col"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.ui.author}</span><span className="font-extrabold text-slate-800 text-xl">{selectedP.creatorName}</span></div>
+                                        {isAdmin && (
+                                            <div className="ml-auto flex gap-2">
+                                                <button onClick={()=>{setForm(selectedP); setModal('edit');}} className="p-3 bg-white text-slate-400 hover:text-indigo-600 rounded-2xl shadow-sm border border-slate-50"><i data-lucide="edit" className="w-5 h-5"></i></button>
+                                                <button onClick={async ()=>{if(confirm("Confirm Padam?")){await deleteDoc(doc(db,'artifacts',currentAppId,'public','data','projects',selectedP.id));await updateDoc(doc(db,'artifacts',currentAppId,'public','data','stats','global'),{totalProjects:increment(-1)}); setModal(null);}}} className="p-3 bg-white text-slate-400 hover:text-red-500 rounded-2xl shadow-sm border border-slate-50"><i data-lucide="trash-2" className="w-5 h-5"></i></button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="p-12 space-y-8">
-                                    <div className="flex justify-between items-center bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
+                                    <div className="flex justify-between items-center bg-slate-50 p-8 rounded-[3rem] border border-slate-100">
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="flex gap-1">
-                                                {[1,2,3,4,5].map(s => (
-                                                    <button key={s} onClick={()=>handleRate(selectedP, s)} className="transition-all hover:scale-150">
-                                                        <i data-lucide="star" className={`w-7 h-7 ${s <= Math.floor(selectedP.stars) ? 'star-active fill-current' : 'text-slate-300'}`}></i>
-                                                    </button>
-                                                ))}
+                                                {[1,2,3,4,5].map(s => <button key={s} onClick={()=>handleRate(selectedP, s)} className="transition-all hover:scale-150"><i data-lucide="star" className={`w-8 h-8 ${s <= Math.floor(selectedP.stars) ? 'star-active fill-current' : 'text-slate-200'}`}></i></button>)}
                                             </div>
                                             <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.ui.score}: {selectedP.stars || 0} ({selectedP.ratingCount || 0})</span>
                                         </div>
-                                        <div className="text-center px-8 border-l border-slate-200">
-                                            <div className="text-3xl font-black text-slate-900">{selectedP.clicks || 0}</div>
-                                            <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.ui.plays}</div>
+                                        <div className="text-center px-10 border-l-2 border-slate-200">
+                                            <div className="text-5xl font-black text-slate-900 tracking-tighter">{selectedP.clicks || 0}</div>
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{t.ui.plays}</div>
                                         </div>
                                     </div>
                                     <div className="flex gap-5">
-                                        <button onClick={()=>setModal(null)} className="flex-1 py-5 text-slate-400 font-black uppercase text-[10px] tracking-[0.2em]">{t.ui.close}</button>
-                                        <a href={selectedP.link} target="_blank" onClick={()=>updateDoc(doc(db,'artifacts',currentAppId,'public','data','projects',selectedP.id),{clicks:increment(1)})} className="flex-[3] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black text-center shadow-xl hover:bg-indigo-600 transition-all uppercase text-sm tracking-widest flex items-center justify-center gap-3">
-                                            <i data-lucide="external-link" className="w-5 h-5"></i> {t.ui.openGame}
-                                        </a>
+                                        <button onClick={()=>setModal(null)} className="flex-1 py-5 text-slate-400 font-black uppercase text-[10px] tracking-widest">{t.ui.close}</button>
+                                        <button onClick={()=>handleAction(selectedP)} className="flex-[3] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black shadow-2xl hover:bg-indigo-600 transition-all uppercase text-sm tracking-widest flex items-center justify-center gap-3"><i data-lucide="play-circle" className="w-6 h-6 fill-current"></i> {t.ui.play}</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Create/Edit Modal */}
                     {(modal === 'create' || modal === 'edit') && (
-                        <div className="fixed inset-0 z-[400] modal-overlay flex items-center justify-center p-6">
-                            <div className="bg-white w-full max-w-xl rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 border-t-8 border-slate-900">
-                                <div className="p-12 text-left bg-slate-50">
-                                    <h3 className="text-4xl font-black mb-1 text-slate-900 tracking-tighter">{modal==='edit' ? t.ui.edit : t.ui.publish}</h3>
-                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">{t.ui.h1} Submission</p>
-                                </div>
+                        <div className="fixed inset-0 z-[400] modal-blur flex items-center justify-center p-6 animate-in zoom-in duration-300">
+                            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl overflow-hidden border-t-8 border-slate-900">
+                                <div className="p-12 text-left bg-slate-50"><h3 className="text-4xl font-black mb-1 text-slate-900 tracking-tighter">{modal==='edit' ? t.ui.edit : t.ui.publish}</h3><p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Portal Sumber LDP</p></div>
                                 <form onSubmit={handleSave} className="p-12 space-y-7">
-                                    <div className="space-y-6">
-                                        <div><label className="text-[10px] font-black text-slate-300 uppercase mb-3 block tracking-widest">{t.ui.formName}</label><input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full px-8 py-5 rounded-3xl bg-slate-50 border-none font-extrabold outline-none focus:ring-4 ring-indigo-500/10" placeholder="e.g. 乘法大挑战" /></div>
-                                        <div><label className="text-[10px] font-black text-slate-300 uppercase mb-3 block tracking-widest">{t.ui.formLink}</label><input required type="url" value={form.link} onChange={e=>setForm({...form,link:e.target.value})} className="w-full px-8 py-5 rounded-3xl bg-slate-50 border-none font-extrabold outline-none focus:ring-4 ring-indigo-500/10" placeholder="https://..." /></div>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formSub}</label><select value={form.subject} onChange={e=>setForm({...form,subject:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-black border-none text-[10px]">{t.subjects.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-                                            <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formYear}</label><select value={form.year} onChange={e=>setForm({...form,year:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-black border-none text-[10px]">{t.years.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
-                                            <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formType}</label><select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-black border-none text-[10px]">{t.types.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
-                                        </div>
+                                    <div><label className="text-[10px] font-black text-slate-300 uppercase mb-3 block tracking-widest">{t.ui.formName}</label><input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full px-8 py-5 rounded-3xl bg-slate-50 border-none font-extrabold outline-none focus:ring-4 ring-indigo-500/10" /></div>
+                                    <div><label className="text-[10px] font-black text-slate-300 uppercase mb-3 block tracking-widest">{t.ui.formLink}</label><input required type="url" value={form.link} onChange={e=>setForm({...form,link:e.target.value})} className="w-full px-8 py-5 rounded-3xl bg-slate-50 border-none font-extrabold outline-none focus:ring-4 ring-indigo-500/10" placeholder="https://..." /></div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formSub}</label><select value={form.subject} onChange={e=>setForm({...form,subject:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-bold border-none text-[10px]">{t.subjects.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+                                        <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formYear}</label><select value={form.year} onChange={e=>setForm({...form,year:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-bold border-none text-[10px]">{t.years.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                                        <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formType}</label><select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-bold border-none text-[10px]">{t.types.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
                                     </div>
-                                    <div className="flex gap-5 pt-8"><button type="button" onClick={()=>setModal(null)} className="flex-1 py-5 text-slate-400 font-black uppercase text-xs tracking-widest">{t.ui.cancel}</button><button type="submit" className="flex-[2] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black shadow-2xl hover:bg-indigo-600 transition-all uppercase tracking-widest text-sm">{t.ui.save}</button></div>
+                                    <div className="flex gap-5 pt-8"><button type="button" onClick={()=>setModal(null)} className="flex-1 py-5 text-slate-400 font-black uppercase text-xs tracking-widest">{t.ui.cancel}</button><button type="submit" className="flex-[2] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black shadow-2xl hover:bg-indigo-600 transition-all uppercase tracking-widest text-sm">{t.ui.confirm}</button></div>
                                 </form>
                             </div>
                         </div>
