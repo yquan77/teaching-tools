@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>致1N、2N、3N的家长妈咪们</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;700&display=swap');
+
+        :root {
+            --warm-pink: #ff9aaf;
+            --gold: #d4af37;
+        }
+
+        body {
+            background: linear-gradient(180deg, #fff5f6 0%, #ffebef 100%);
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .font-calligraphy {
+            font-family: 'Ma Shan Zheng', cursive;
+        }
+
+        /* 核心照片样式 */
+        .main-card {
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(255, 154, 175, 0.3);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            transform: rotate(-1deg);
+            transition: all 0.5s ease;
+        }
+
+        /* 飘落物 */
+        .flower {
+            position: fixed;
+            top: -10%;
+            pointer-events: none;
+            z-index: 5;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(110vh) rotate(360deg); }
+        }
+
+        /* 祝福语容器 */
+        .message-box {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid white;
+            border-radius: 20px;
+            box-shadow: inset 0 0 15px rgba(255, 182, 193, 0.2);
+        }
+
+        #interaction-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .heart-count-tag {
+            background: linear-gradient(45deg, #ff85a2, #ffb6c1);
+            color: white;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            box-shadow: 0 4px 10px rgba(255, 133, 162, 0.3);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center">
+
+    <canvas id="interaction-canvas"></canvas>
+
+    <!-- 顶部装饰 -->
+    <div class="w-full text-center py-8 z-10">
+        <h2 class="text-pink-400 text-lg tracking-[0.2em] font-light">致 1N、2N、3N</h2>
+        <h1 class="text-5xl font-calligraphy text-pink-500 mt-2">家长妈咪们</h1>
+        <div class="flex justify-center mt-2">
+            <div class="h-1 w-16 bg-pink-300 rounded-full"></div>
+        </div>
+    </div>
+
+    <!-- 核心内容区 -->
+    <main class="w-full max-w-sm px-4 z-20 space-y-8">
+        
+        <!-- 自动加载的照片 -->
+        <div class="main-card relative">
+            <img src="image.png" 
+                 alt="母亲节合影" 
+                 class="w-full h-auto rounded-lg shadow-inner"
+                 onerror="this.src='https://images.unsplash.com/photo-1594042494541-269335099351?auto=format&fit=crop&q=80&w=800'; console.log('使用备用图');">
+            
+            <div class="absolute -bottom-2 -left-2 bg-white px-3 py-1 rounded-full shadow-md">
+                <span class="text-pink-500 font-bold text-xs">节日快乐 🌸</span>
+            </div>
+        </div>
+
+        <!-- 动态文案区 -->
+        <div class="message-box p-6 text-center">
+            <p id="dynamic-wish" class="text-gray-700 text-lg leading-relaxed italic">
+                “感谢各位妈咪一直以来对班级工作的支持，祝您母亲节快乐！”
+            </p>
+            <div class="mt-6 flex flex-col items-center gap-3">
+                <button onclick="changeWish()" class="text-pink-400 text-xs font-bold border border-pink-200 px-4 py-1 rounded-full hover:bg-pink-50 transition-colors">
+                    换一句心里话 ✨
+                </button>
+                <div class="heart-count-tag mt-2">
+                    已有 <span id="count">0</span> 位妈咪收到了爱心
+                </div>
+            </div>
+        </div>
+
+        <!-- 互动按钮 -->
+        <div class="flex justify-center">
+            <button onclick="sendLove(event)" class="bg-pink-500 hover:bg-pink-600 text-white w-20 h-20 rounded-full shadow-2xl flex items-center justify-center text-4xl animate-bounce">
+                ❤️
+            </button>
+        </div>
+
+    </main>
+
+    <footer class="mt-auto py-10 text-pink-400/50 text-xs text-center z-10">
+        <p>祝 1N、2N、3N 全体妈咪</p>
+        <p class="mt-1 font-calligraphy text-base">身体健康 · 永远美丽</p>
+    </footer>
+
+    <script>
+        const schoolWishes = [
+            "“感谢各位妈咪一直以来对班级工作的支持，祝您母亲节快乐！”",
+            "“每一个孩子的进步，都离不开您在背后的辛勤付出。您辛苦了！”",
+            "“您的爱是孩子们成长的阳光，愿您岁岁年年，笑靥如花。”",
+            "“祝 1N、2N、3N 的妈咪们：节日快乐，愿您被生活温柔以待。”",
+            "“在这个特别的日子里，我们要对最伟大的您说声：谢谢！”",
+            "“愿您不仅是坚强的妈妈，更是快乐的自己。”"
+        ];
+
+        let count = 0;
+
+        // 切换文案
+        function changeWish() {
+            const el = document.getElementById('dynamic-wish');
+            el.style.opacity = 0;
+            setTimeout(() => {
+                const randomWish = schoolWishes[Math.floor(Math.random() * schoolWishes.length)];
+                el.innerText = randomWish;
+                el.style.opacity = 1;
+            }, 300);
+        }
+
+        // 飘落花瓣效果
+        function createFlower() {
+            const items = ['🌸', '💖', '✨', '🌹'];
+            const flower = document.createElement('div');
+            flower.className = 'flower';
+            flower.innerText = items[Math.floor(Math.random() * items.length)];
+            flower.style.left = Math.random() * 100 + 'vw';
+            flower.style.fontSize = Math.random() * 20 + 10 + 'px';
+            flower.style.animationDuration = Math.random() * 4 + 6 + 's';
+            flower.style.opacity = Math.random() * 0.6 + 0.4;
+            document.body.appendChild(flower);
+            setTimeout(() => flower.remove(), 10000);
+        }
+        setInterval(createFlower, 600);
+
+        // 粒子爱心系统
+        const canvas = document.getElementById('interaction-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class LoveParticle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 15 + 10;
+                this.speedX = (Math.random() - 0.5) * 8;
+                this.speedY = Math.random() * -12 - 4;
+                this.gravity = 0.3;
+                this.opacity = 1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.speedY += this.gravity;
+                this.opacity -= 0.015;
+            }
+            draw() {
+                ctx.globalAlpha = this.opacity;
+                ctx.font = `${this.size}px serif`;
+                ctx.fillText('❤️', this.x, this.y);
+            }
+        }
+
+        function sendLove(e) {
+            count++;
+            document.getElementById('count').innerText = count;
+            const x = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth/2;
+            const y = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight/2;
+            for (let i = 0; i < 15; i++) {
+                particles.push(new LoveParticle(x, y));
+            }
+        }
+
+        // 全屏点击也能触发爱心
+        document.addEventListener('mousedown', (e) => {
+            if(e.target.tagName !== 'BUTTON') sendLove(e);
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, i) => {
+                p.update();
+                p.draw();
+                if (p.opacity <= 0) particles.splice(i, 1);
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
