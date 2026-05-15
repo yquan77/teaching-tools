@@ -25,6 +25,8 @@
         .star-active { fill: #f59e0b; color: #f59e0b; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .purple-gradient { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); }
+        .photo-scroll { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 1rem; padding-bottom: 1rem; }
+        .photo-item { flex: 0 0 280px; scroll-snap-align: start; }
     </style>
 </head>
 <body class="text-slate-900 min-h-screen">
@@ -56,7 +58,7 @@
     </script>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
         const { auth, db, currentAppId, collection, onSnapshot, doc, updateDoc, addDoc, setDoc, deleteDoc, increment, signInAnonymously, onAuthStateChanged, signInWithPopup, provider, signOut, arrayUnion } = window.fb;
 
         const ADMIN_EMAILS = ["yquan77@gmail.com", "yquan77@moe-dl.edu.my"];
@@ -69,12 +71,13 @@
                 all: "全部",
                 stats: ["累计作品", "访客总量", "使用总量", "我的贡献"],
                 ui: {
-                    h1: "AI 教学资源库", tagline: "意念编程 • 创意无限", loginHint: "登录账号以发布您的 AI 作品",
-                    btnLogin: "立即通过 Google 登录", btnGuest: "以访客身份进入", logout: "登出", publish: "发布作品",
+                    h1: "AI 教学资源库", tagline: "意念编程 • 创意无限", loginHint: "登录 Google 账号以发布您的作品与照片",
+                    btnLogin: "Google 账号登录", btnGuest: "以访客身份进入", logout: "登出", publish: "发布作品",
                     noData: "没有找到相关作品", detail: "点击查看详情", score: "评分", plays: "次使用",
                     formName: "作品名称", formLink: "链接地址", formSub: "科目", formYear: "年级", formType: "种类",
                     confirm: "确认提交", cancel: "取消", close: "关闭窗口", master: "管理员模式", play: "开始体验",
-                    welcomeBack: "欢迎回来!"
+                    welcomeBack: "欢迎回来!", moments: "精彩瞬间", uploadPhoto: "分享课堂照片", uploading: "上传中...",
+                    photoHint: "点击分享照片，记录学生互动的快乐时刻"
                 }
             },
             ms: {
@@ -84,12 +87,13 @@
                 all: "Semua",
                 stats: ["Jumlah Karya", "Jumlah Pelawat", "Jumlah Penggunaan", "Sumbangan"],
                 ui: {
-                    h1: "Hab Sumber AI", tagline: "Vibe Coding • Tanpa Had", loginHint: "Log masuk untuk hantar karya anda",
+                    h1: "Hab Sumber AI", tagline: "Vibe Coding • Tanpa Had", loginHint: "Log masuk Google untuk hantar karya & foto",
                     btnLogin: "Log Masuk Google", btnGuest: "Masuk Tetamu", logout: "Keluar", publish: "Hantar Karya",
                     noData: "Tiada karya ditemui", detail: "Klik Butiran", score: "Skor", plays: "klik",
                     formName: "Nama Karya", formLink: "Pautan", formSub: "Subjek", formYear: "Tahun", formType: "Kategori",
                     confirm: "Hantar", cancel: "Batal", close: "Tutup", master: "Mode Admin", play: "Cuba Main",
-                    welcomeBack: "Selamat Kembali!"
+                    welcomeBack: "Selamat Kembali!", moments: "Momen Indah", uploadPhoto: "Kongsi Foto Kelas", uploading: "Memuat naik...",
+                    photoHint: "Klik untuk kongsi foto interaksi murid di dalam kelas"
                 }
             }
         };
@@ -103,16 +107,44 @@
             return { i: "sparkles", c: "bg-indigo-600", l: "bg-indigo-50", t: "text-indigo-600" };
         };
 
+        // 图片压缩工具函数
+        const compressImage = (file) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const max_size = 800; // 最大尺寸压缩
+                        if (width > height) { if (width > max_size) { height *= max_size / width; width = max_size; } }
+                        else { if (height > max_size) { width *= max_size / height; height = max_size; } }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7)); // 压缩质量 0.7
+                    };
+                };
+            });
+        };
+
         const App = () => {
             const [lang, setLang] = useState('zh');
             const [user, setUser] = useState(null);
             const [projects, setProjects] = useState([]);
+            const [moments, setMoments] = useState([]);
             const [stats, setStats] = useState({ totalViews: 0, totalClicks: 0, totalProjects: 0 });
             const [loading, setLoading] = useState(true);
             const [modal, setModal] = useState(null); 
             const [selectedP, setSelectedP] = useState(null);
+            const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
             const [form, setForm] = useState({ name: '', link: '', subject: '数学', year: '一年级', type: '游戏' });
             const [filters, setFilters] = useState({ subject: 'All', year: 'All', type: 'All' });
+            const fileInputRef = useRef(null);
 
             const t = LANGUAGES[lang];
             const isAdmin = useMemo(() => user && ADMIN_EMAILS.includes(user.email), [user]);
@@ -126,15 +158,21 @@
                 if (!user) return;
                 const statRef = doc(db, 'artifacts', currentAppId, 'public', 'data', 'stats', 'global');
                 setDoc(statRef, { totalViews: increment(1) }, { merge: true });
+
                 const unsubP = onSnapshot(collection(db, 'artifacts', currentAppId, 'public', 'data', 'projects'), s => {
                     setProjects(s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0)));
                     setLoading(false);
                 });
+
+                const unsubM = onSnapshot(collection(db, 'artifacts', currentAppId, 'public', 'data', 'moments'), s => {
+                    setMoments(s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0)));
+                });
+
                 const unsubS = onSnapshot(statRef, d => d.exists() && setStats(d.data()));
-                return () => { unsubP(); unsubS(); };
+                return () => { unsubP(); unsubM(); unsubS(); };
             }, [user]);
 
-            useEffect(() => { lucide.createIcons(); }, [user, projects, loading, modal, lang, selectedP]);
+            useEffect(() => { lucide.createIcons(); }, [user, projects, moments, loading, modal, lang, selectedP]);
 
             const handleSave = async (e) => {
                 e.preventDefault();
@@ -144,6 +182,22 @@
                     await updateDoc(doc(db, 'artifacts', currentAppId, 'public', 'data', 'stats', 'global'), { totalProjects: increment(1) });
                 }
                 setModal(null);
+            };
+
+            const handlePhotoUpload = async (e) => {
+                const file = e.target.files[0];
+                if (!file || user.isAnonymous) return;
+                setIsUploadingPhoto(true);
+                try {
+                    const compressedData = await compressImage(file);
+                    await addDoc(collection(db, 'artifacts', currentAppId, 'public', 'data', 'moments'), {
+                        image: compressedData,
+                        uploader: user.displayName,
+                        uid: user.uid,
+                        timestamp: Date.now()
+                    });
+                } catch (err) { console.error(err); }
+                finally { setIsUploadingPhoto(false); }
             };
 
             const handleAction = async (p) => {
@@ -162,7 +216,12 @@
                 setSelectedP(prev => ({...prev, stars: Number(newStars.toFixed(1)), ratingCount: (p.ratingCount + 1), votedUsers: [...(p.votedUsers||[]), user.uid]}));
             };
 
-            const filtered = projects.filter(p => (filters.subject === 'All' || p.subject === filters.subject) || (lang === 'ms' && LANGUAGES.zh.subjects[LANGUAGES.ms.subjects.indexOf(p.subject)] === filters.subject));
+            const filtered = projects.filter(p => {
+                const subMatch = filters.subject === 'All' || p.subject === filters.subject || (lang === 'ms' && LANGUAGES.zh.subjects[LANGUAGES.ms.subjects.indexOf(p.subject)] === filters.subject);
+                const yearMatch = filters.year === 'All' || p.year === filters.year;
+                const typeMatch = filters.type === 'All' || p.type === filters.type;
+                return subMatch && yearMatch && typeMatch;
+            });
 
             if (!user) return (
                 <div className="min-h-screen flex items-center justify-center p-6 relative">
@@ -171,13 +230,13 @@
                         <div className="bg-indigo-600 w-20 h-20 rounded-3xl mx-auto mb-10 flex items-center justify-center text-white shadow-xl rotate-6"><i data-lucide="sparkles" className="w-10 h-10"></i></div>
                         <h1 className="text-3xl font-black mb-2 tracking-tight text-slate-900">{t.ui.h1}</h1>
                         <p className="text-slate-400 font-bold mb-12 text-[10px] tracking-[0.2em] uppercase">{t.ui.tagline}</p>
-                        <div className="space-y-4">
-                            <button onClick={()=>signInWithPopup(auth, provider)} className="w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black flex items-center justify-center gap-3 shadow-xl hover:bg-indigo-600 transition-all text-sm uppercase tracking-widest">
+                        <div className="space-y-4 text-white">
+                            <button onClick={()=>signInWithPopup(auth, provider)} className="w-full py-5 bg-slate-900 rounded-[2rem] font-black flex items-center justify-center gap-3 shadow-xl hover:bg-indigo-600 transition-all text-sm uppercase tracking-widest">
                                 <img src="https://www.google.com/favicon.ico" className="w-5 h-5 brightness-200" /> 
-                                <span>{t.ui.btnLogin}</span>
+                                {t.ui.btnLogin}
                             </button>
-                            <button onClick={()=>signInAnonymously(auth)} className="w-full py-5 bg-white text-slate-600 border border-slate-200 rounded-[2rem] font-bold text-sm uppercase tracking-widest transition-all hover:bg-slate-50">
-                                <span>{t.ui.btnGuest}</span>
+                            <button onClick={()=>signInAnonymously(auth)} className="w-full py-5 bg-white text-slate-600 border border-slate-200 rounded-[2rem] font-black text-sm uppercase tracking-widest transition-all hover:bg-slate-100">
+                                {t.ui.btnGuest}
                             </button>
                         </div>
                     </div>
@@ -189,7 +248,7 @@
                     <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                         <div className="flex items-center gap-5">
                             <div className="bg-slate-900 p-3.5 rounded-2xl text-white shadow-xl rotate-3"><i data-lucide="gem" className="w-6 h-6"></i></div>
-                            <div><h1 className="text-2xl font-black tracking-tighter text-slate-900">Gemini Hub</h1><p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.3em]">{t.ui.tagline}</p></div>
+                            <div><h1 className="text-2xl font-black tracking-tighter text-slate-900">GEMINI HUB</h1><p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.3em]">{t.ui.tagline}</p></div>
                         </div>
                         <div className="flex items-center gap-3">
                             <button onClick={() => setLang(lang === 'zh' ? 'ms' : 'zh')} className="bg-white border-2 border-slate-100 px-5 py-2.5 rounded-full text-[11px] font-black text-indigo-600 hover:bg-slate-50 transition-all uppercase tracking-tighter">
@@ -204,29 +263,22 @@
                         </div>
                     </header>
 
-                    {/* Login Banner for Guests - RESTORED PURPLE GRADIENT */}
                     {user.isAnonymous && (
-                        <div className="mb-14 purple-gradient rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 text-white shadow-2xl shadow-indigo-100 animate-in slide-in-from-top-4 duration-500">
-                            <div className="flex items-center gap-6">
-                                <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-md"><i data-lucide="user-plus" className="w-8 h-8"></i></div>
-                                <div>
-                                    <h4 className="text-lg font-black uppercase tracking-tight">{t.ui.welcomeBack}</h4>
-                                    <p className="font-bold text-sm text-indigo-100">{t.ui.loginHint}</p>
-                                </div>
-                            </div>
+                        <div className="mb-14 purple-gradient rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 text-white shadow-2xl animate-in slide-in-from-top-4 duration-500">
+                            <div className="flex items-center gap-6"><div className="bg-white/20 p-4 rounded-3xl backdrop-blur-md"><i data-lucide="user-plus" className="w-8 h-8"></i></div><div><h4 className="text-lg font-black uppercase tracking-tight">{lang==='zh'?'加入我们!':'Sertai Kami!'}</h4><p className="font-bold text-sm text-indigo-100">{t.ui.loginHint}</p></div></div>
                             <button onClick={()=>signInWithPopup(auth, provider)} className="bg-white text-indigo-600 px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:scale-105 transition-all">{t.ui.btnLogin}</button>
                         </div>
                     )}
 
                     <div className="flex flex-wrap gap-3 mb-10 overflow-x-auto hide-scrollbar pb-2">
                         <div className="bg-slate-100/80 p-1.5 rounded-2xl flex gap-1 whitespace-nowrap border border-white shadow-sm">
-                            <button onClick={()=>setFilters({...filters, subject:'All'})} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${filters.subject==='All'?'bg-white shadow text-indigo-600':'text-slate-400 hover:text-slate-600'}`}>{t.all}</button>
-                            {t.subjects.map(s => <button key={s} onClick={()=>setFilters({...filters, subject:s})} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${filters.subject===s?'bg-white shadow text-indigo-600':'text-slate-400 hover:text-slate-600'}`}>{s}</button>)}
+                            <button onClick={()=>setFilters({...filters, subject:'All'})} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${filters.subject==='All'?'bg-white shadow text-indigo-600':'text-slate-400'}`}>{t.all}</button>
+                            {t.subjects.map(s => <button key={s} onClick={()=>setFilters({...filters, subject:s})} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${filters.subject===s?'bg-white shadow text-indigo-600':'text-slate-400'}`}>{s}</button>)}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-24">
-                        {loading ? <div className="col-span-full py-20 text-center font-black text-slate-300 tracking-[0.5em] animate-pulse">CONNECTING...</div> : 
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-16">
+                        {loading ? <div className="col-span-full py-20 text-center font-black text-slate-300 tracking-[0.5em] animate-pulse uppercase">Syncing...</div> : 
                         filtered.length === 0 ? <div className="col-span-full py-40 text-center border-2 border-dashed border-slate-200 rounded-[3rem] text-slate-300 font-black uppercase tracking-widest">{t.ui.noData}</div> : 
                         filtered.map(p => {
                             const v = getVisual(p.name, p.subject);
@@ -251,67 +303,70 @@
                         })}
                     </div>
 
+                    {/* PHOTO GALLERY SECTION - MOMENTS */}
+                    <section className="mb-20">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-amber-100 text-amber-600 rounded-2xl"><i data-lucide="camera" className="w-6 h-6"></i></div>
+                                <div><h2 className="text-2xl font-black tracking-tight text-slate-900">{t.ui.moments}</h2><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.ui.photoHint}</p></div>
+                            </div>
+                            {!user.isAnonymous && (
+                                <>
+                                    <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+                                    <button onClick={()=>fileInputRef.current.click()} disabled={isUploadingPhoto} className="px-6 py-3 bg-white border border-slate-200 rounded-full font-black text-[11px] uppercase text-indigo-600 shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2">
+                                        {isUploadingPhoto ? <><div className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div> {t.ui.uploading}</> : <><i data-lucide="plus" className="w-4 h-4"></i> {t.ui.uploadPhoto}</>}
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                        <div className="photo-scroll hide-scrollbar">
+                            {moments.length === 0 ? (
+                                <div className="w-full py-12 text-center border-2 border-dashed border-slate-100 rounded-[2.5rem] text-slate-300 font-bold uppercase tracking-widest text-xs">Waiting for first classroom moment...</div>
+                            ) : moments.map(m => (
+                                <div key={m.id} className="photo-item group relative">
+                                    <div className="w-full aspect-[4/3] rounded-[2rem] overflow-hidden shadow-md border-4 border-white bg-slate-100">
+                                        <img src={m.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    </div>
+                                    <div className="absolute bottom-4 left-4 right-4 p-3 glass-panel rounded-xl opacity-0 group-hover:opacity-100 transition-all">
+                                        <p className="text-[9px] font-black uppercase text-indigo-600">Teacher: {m.uploader}</p>
+                                    </div>
+                                    {isAdmin && (
+                                        <button onClick={async ()=>{if(confirm("Padam Foto?")) await deleteDoc(doc(db,'artifacts',currentAppId,'public','data','moments',m.id))}} className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-full opacity-0 group-hover:opacity-100 shadow-lg"><i data-lucide="trash-2" className="w-3 h-3"></i></button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* STATISTICS SECTION */}
                     <section className="mt-20 pt-20 border-t border-slate-200">
                         <div className="bg-slate-900 text-white p-12 rounded-[4rem] w-full max-w-6xl mx-auto shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-around gap-12">
                             <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px]"></div>
-                            
-                            <div className="text-center relative z-10">
-                                <p className="text-[11px] font-black uppercase tracking-[0.5em] text-white/30 mb-4 flex items-center justify-center gap-2"><i data-lucide="box" className="w-3.5 h-3.5"></i> {t.stats[0]}</p>
-                                <p className="text-6xl font-black tracking-tighter leading-none">{stats.totalProjects || 0}</p>
-                            </div>
+                            <div className="text-center relative z-10"><p className="text-[11px] font-black uppercase tracking-[0.5em] text-white/30 mb-4 flex items-center justify-center gap-2"><i data-lucide="box" className="w-3.5 h-3.5"></i> {t.stats[0]}</p><p className="text-6xl font-black tracking-tighter leading-none">{stats.totalProjects || 0}</p></div>
                             <div className="w-px h-20 bg-white/10 hidden md:block"></div>
-                            <div className="text-center relative z-10">
-                                <p className="text-[11px] font-black uppercase tracking-[0.5em] text-white/30 mb-4 flex items-center justify-center gap-2"><i data-lucide="eye" className="w-3.5 h-3.5"></i> {t.stats[1]}</p>
-                                <p className="text-6xl font-black tracking-tighter leading-none">{stats.totalViews || 0}</p>
-                            </div>
+                            <div className="text-center relative z-10"><p className="text-[11px] font-black uppercase tracking-[0.5em] text-white/30 mb-4 flex items-center justify-center gap-2"><i data-lucide="eye" className="w-3.5 h-3.5"></i> {t.stats[1]}</p><p className="text-6xl font-black tracking-tighter leading-none">{stats.totalViews || 0}</p></div>
                             <div className="w-px h-20 bg-white/10 hidden md:block"></div>
-                            <div className="text-center relative z-10">
-                                <p className="text-[11px] font-black uppercase tracking-[0.4em] text-indigo-400 mb-4 flex items-center justify-center gap-2"><i data-lucide="activity" className="w-3.5 h-3.5"></i> {t.stats[2]}</p>
-                                <p className="text-7xl font-black tracking-tighter leading-none text-white drop-shadow-2xl">{stats.totalClicks || 0}</p>
-                            </div>
+                            <div className="text-center relative z-10"><p className="text-[11px] font-black uppercase tracking-[0.4em] text-indigo-400 mb-4 flex items-center justify-center gap-2"><i data-lucide="activity" className="w-3.5 h-3.5"></i> {t.stats[2]}</p><p className="text-7xl font-black tracking-tighter leading-none text-white drop-shadow-2xl">{stats.totalClicks || 0}</p></div>
                         </div>
                         <footer className="mt-20 text-center text-[12px] font-black text-slate-300 uppercase tracking-[0.6em] pb-12">LDP Gemini SJK (C) KUO KUANG 2</footer>
                     </section>
 
-                    {/* Detail Modal with Backdrop Blur */}
+                    {/* MODALS */}
                     {modal === 'detail' && selectedP && (
                         <div className="fixed inset-0 z-[300] modal-blur flex items-center justify-center p-6 animate-in fade-in duration-300" onClick={()=>setModal(null)}>
                             <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl overflow-hidden border-t-8 border-indigo-600" onClick={e=>e.stopPropagation()}>
-                                <div className={`p-12 ${getVisual(selectedP.name, selectedP.subject).l} relative`}>
-                                    <button onClick={()=>setModal(null)} className="absolute top-8 right-10 bg-white/50 p-3 rounded-full shadow-sm hover:scale-110 transition-all"><i data-lucide="x" className="w-5 h-5"></i></button>
-                                    <div className="flex gap-2 mb-6">
-                                        <span className="px-4 py-1.5 bg-white text-indigo-600 rounded-full text-[10px] font-black uppercase shadow-sm">#{selectedP.subject}</span>
-                                        <span className="px-4 py-1.5 bg-white text-slate-400 rounded-full text-[10px] font-black uppercase shadow-sm">#{selectedP.year}</span>
-                                    </div>
+                                <div className={`p-12 ${getVisual(selectedP.name, selectedP.subject).l} relative text-left`}>
+                                    <button onClick={()=>setModal(null)} className="absolute top-8 right-10 bg-white/60 p-3 rounded-full shadow-sm hover:scale-110 transition-all"><i data-lucide="x" className="w-5 h-5"></i></button>
+                                    <div className="flex gap-2 mb-6"><span className="px-4 py-1.5 bg-white text-indigo-600 rounded-full text-[10px] font-black uppercase shadow-sm">#{selectedP.subject}</span><span className="px-4 py-1.5 bg-white text-slate-400 rounded-full text-[10px] font-black uppercase shadow-sm">#{selectedP.year}</span></div>
                                     <h3 className="text-4xl font-black leading-tight mb-8 text-slate-900 tracking-tighter">{selectedP.name}</h3>
-                                    <div className="flex items-center gap-4">
-                                        <img src={selectedP.creatorPhoto} className="w-16 h-16 rounded-2xl border-4 border-white shadow-md" />
-                                        <div className="flex flex-col"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.ui.author}</span><span className="font-extrabold text-slate-800 text-xl">{selectedP.creatorName}</span></div>
-                                        {isAdmin && (
-                                            <div className="ml-auto flex gap-2">
-                                                <button onClick={()=>{setForm(selectedP); setModal('edit');}} className="p-3 bg-white text-slate-400 hover:text-indigo-600 rounded-2xl shadow-sm border border-slate-50"><i data-lucide="edit" className="w-5 h-5"></i></button>
-                                                <button onClick={async ()=>{if(confirm("Confirm Padam?")){await deleteDoc(doc(db,'artifacts',currentAppId,'public','data','projects',selectedP.id));await updateDoc(doc(db,'artifacts',currentAppId,'public','data','stats','global'),{totalProjects:increment(-1)}); setModal(null);}}} className="p-3 bg-white text-slate-400 hover:text-red-500 rounded-2xl shadow-sm border border-slate-50"><i data-lucide="trash-2" className="w-5 h-5"></i></button>
-                                            </div>
-                                        )}
-                                    </div>
+                                    <div className="flex items-center gap-4"><img src={selectedP.creatorPhoto} className="w-16 h-16 rounded-2xl border-4 border-white shadow-md" /><div className="flex flex-col"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.ui.author}</span><span className="font-extrabold text-slate-800 text-xl">{selectedP.creatorName}</span></div>{isAdmin && <div className="ml-auto flex gap-2"><button onClick={()=>{setForm(selectedP); setModal('edit');}} className="p-3 bg-white text-slate-400 hover:text-indigo-600 rounded-2xl shadow-sm border border-slate-50"><i data-lucide="edit" className="w-5 h-5"></i></button><button onClick={async ()=>{if(confirm("Padam?")){await deleteDoc(doc(db,'artifacts',currentAppId,'public','data','projects',selectedP.id));await updateDoc(doc(db,'artifacts',currentAppId,'public','data','stats','global'),{totalProjects:increment(-1)}); setModal(null);}}} className="p-3 bg-white text-slate-400 hover:text-red-500 rounded-2xl shadow-sm border border-slate-50"><i data-lucide="trash-2" className="w-5 h-5"></i></button></div>}</div>
                                 </div>
                                 <div className="p-12 space-y-8">
                                     <div className="flex justify-between items-center bg-slate-50 p-8 rounded-[3rem] border border-slate-100">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <div className="flex gap-1">
-                                                {[1,2,3,4,5].map(s => <button key={s} onClick={()=>handleRate(selectedP, s)} className="transition-all hover:scale-150"><i data-lucide="star" className={`w-8 h-8 ${s <= Math.floor(selectedP.stars) ? 'star-active fill-current' : 'text-slate-200'}`}></i></button>)}
-                                            </div>
-                                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.ui.score}: {selectedP.stars || 0} ({selectedP.ratingCount || 0})</span>
-                                        </div>
-                                        <div className="text-center px-10 border-l-2 border-slate-200">
-                                            <div className="text-5xl font-black text-slate-900 tracking-tighter">{selectedP.clicks || 0}</div>
-                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{t.ui.plays}</div>
-                                        </div>
+                                        <div className="flex flex-col items-center gap-3"><div className="flex gap-1">{[1,2,3,4,5].map(s => <button key={s} onClick={()=>handleRate(selectedP, s)} className="transition-all hover:scale-150"><i data-lucide="star" className={`w-8 h-8 ${s <= Math.floor(selectedP.stars) ? 'star-active fill-current' : 'text-slate-200'}`}></i></button>)}</div><span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.ui.score}: {selectedP.stars || 0} ({selectedP.ratingCount || 0})</span></div>
+                                        <div className="text-center px-10 border-l-2 border-slate-200"><div className="text-5xl font-black text-slate-900 tracking-tighter">{selectedP.clicks || 0}</div><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{t.ui.plays}</div></div>
                                     </div>
-                                    <div className="flex gap-5">
-                                        <button onClick={()=>setModal(null)} className="flex-1 py-5 text-slate-400 font-black uppercase text-[10px] tracking-widest">{t.ui.close}</button>
-                                        <button onClick={()=>handleAction(selectedP)} className="flex-[3] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black shadow-2xl hover:bg-indigo-600 transition-all uppercase text-sm tracking-widest flex items-center justify-center gap-3"><i data-lucide="play-circle" className="w-6 h-6 fill-current"></i> {t.ui.play}</button>
-                                    </div>
+                                    <div className="flex gap-5"><button onClick={()=>setModal(null)} className="flex-1 py-5 text-slate-400 font-black uppercase text-[10px] tracking-widest">{t.ui.close}</button><button onClick={()=>handleAction(selectedP)} className="flex-[3] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black shadow-2xl hover:bg-indigo-600 transition-all uppercase text-sm tracking-widest flex items-center justify-center gap-3"><i data-lucide="play-circle" className="w-6 h-6 fill-current"></i> {t.ui.play}</button></div>
                                 </div>
                             </div>
                         </div>
@@ -319,15 +374,17 @@
 
                     {(modal === 'create' || modal === 'edit') && (
                         <div className="fixed inset-0 z-[400] modal-blur flex items-center justify-center p-6 animate-in zoom-in duration-300">
-                            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl overflow-hidden border-t-8 border-slate-900">
+                            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl overflow-hidden border-t-8 border-indigo-600">
                                 <div className="p-12 text-left bg-slate-50"><h3 className="text-4xl font-black mb-1 text-slate-900 tracking-tighter">{modal==='edit' ? t.ui.edit : t.ui.publish}</h3><p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Portal Sumber LDP</p></div>
-                                <form onSubmit={handleSave} className="p-12 space-y-7">
-                                    <div><label className="text-[10px] font-black text-slate-300 uppercase mb-3 block tracking-widest">{t.ui.formName}</label><input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full px-8 py-5 rounded-3xl bg-slate-50 border-none font-extrabold outline-none focus:ring-4 ring-indigo-500/10" /></div>
-                                    <div><label className="text-[10px] font-black text-slate-300 uppercase mb-3 block tracking-widest">{t.ui.formLink}</label><input required type="url" value={form.link} onChange={e=>setForm({...form,link:e.target.value})} className="w-full px-8 py-5 rounded-3xl bg-slate-50 border-none font-extrabold outline-none focus:ring-4 ring-indigo-500/10" placeholder="https://..." /></div>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formSub}</label><select value={form.subject} onChange={e=>setForm({...form,subject:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-bold border-none text-[10px]">{t.subjects.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-                                        <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formYear}</label><select value={form.year} onChange={e=>setForm({...form,year:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-bold border-none text-[10px]">{t.years.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
-                                        <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formType}</label><select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-bold border-none text-[10px]">{t.types.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                                <form onSubmit={handleSave} className="p-12 space-y-7 text-left">
+                                    <div className="space-y-6">
+                                        <div><label className="text-[10px] font-black text-slate-300 uppercase mb-3 block tracking-widest">{t.ui.formName}</label><input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full px-8 py-5 rounded-3xl bg-slate-50 border-none font-extrabold outline-none focus:ring-4 ring-indigo-500/10" /></div>
+                                        <div><label className="text-[10px] font-black text-slate-300 uppercase mb-3 block tracking-widest">{t.ui.formLink}</label><input required type="url" value={form.link} onChange={e=>setForm({...form,link:e.target.value})} className="w-full px-8 py-5 rounded-3xl bg-slate-50 border-none font-extrabold outline-none focus:ring-4 ring-indigo-500/10" placeholder="https://..." /></div>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formSub}</label><select value={form.subject} onChange={e=>setForm({...form,subject:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-bold border-none text-[10px]">{t.subjects.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+                                            <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formYear}</label><select value={form.year} onChange={e=>setForm({...form,year:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-bold border-none text-[10px]">{t.years.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                                            <div><label className="text-[10px] font-black text-slate-300 uppercase mb-2 block">{t.ui.formType}</label><select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 font-bold border-none text-[10px]">{t.types.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                                        </div>
                                     </div>
                                     <div className="flex gap-5 pt-8"><button type="button" onClick={()=>setModal(null)} className="flex-1 py-5 text-slate-400 font-black uppercase text-xs tracking-widest">{t.ui.cancel}</button><button type="submit" className="flex-[2] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black shadow-2xl hover:bg-indigo-600 transition-all uppercase tracking-widest text-sm">{t.ui.confirm}</button></div>
                                 </form>
