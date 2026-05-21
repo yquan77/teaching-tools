@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>百格图乘法表动画</title>
+    <!-- 引入 Tailwind CSS 进行现代化的 UI 设计 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 针对格子动画的微调，增加缩放和高亮效果 */
+        .grid-cell {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .grid-cell.active-pulse {
+            animation: pulse-ring 0.6s ease-out;
+        }
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0px rgba(99, 102, 241, 0.7);
+            }
+            50% {
+                transform: scale(1.15);
+                box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0px rgba(99, 102, 241, 0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between font-sans">
+
+    <!-- 顶部导航栏 -->
+    <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white p-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">百格图乘法表动画</h1>
+                    <p class="text-xs text-slate-500">直观探索 2 至 10 乘法表在 1-100 百格图中的跳跃分布</p>
+                </div>
+            </div>
+            <!-- 乘数选择器 -->
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-slate-600">选择乘法表:</span>
+                <div class="flex bg-slate-100 p-1 rounded-lg gap-1 border border-slate-200">
+                    <select id="factor-select" class="bg-white border-none text-slate-800 text-sm font-semibold rounded-md py-1 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="2" selected>2 的乘法表</option>
+                        <option value="3">3 的乘法表</option>
+                        <option value="4">4 的乘法表</option>
+                        <option value="5">5 的乘法表</option>
+                        <option value="6">6 的乘法表</option>
+                        <option value="7">7 的乘法表</option>
+                        <option value="8">8 的乘法表</option>
+                        <option value="9">9 的乘法表</option>
+                        <option value="10">10 的乘法表</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主体区域 -->
+    <main class="max-w-6xl w-full mx-auto p-4 sm:p-6 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- 左侧：控制栏 + 百格图 -->
+        <section class="lg:col-span-8 flex flex-col gap-4">
+            <!-- 播放控制台 -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <button id="btn-start" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /></svg>
+                        <span>开始动画</span>
+                    </button>
+                    <button id="btn-pause" class="hidden px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg shadow-sm transition flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span>暂停</span>
+                    </button>
+                    <button id="btn-reset" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-lg transition flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 10H18" /></svg>
+                        <span>重置</span>
+                    </button>
+                    <button id="btn-complete" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm transition flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                        <span>直接展示</span>
+                    </button>
+                </div>
+
+                <!-- 动画速度控制 -->
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-medium text-slate-500">动画速度:</span>
+                    <input id="speed-range" type="range" min="100" max="1500" step="100" value="600" class="w-24 accent-indigo-600 cursor-pointer">
+                    <span id="speed-text" class="text-xs text-slate-600 font-mono w-12 text-right">0.6s</span>
+                </div>
+            </div>
+
+            <!-- 百格图 -->
+            <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-center items-center">
+                <!-- 保持宽高比 1:1 响应式网格 -->
+                <div class="w-full max-w-[500px] aspect-square">
+                    <div id="grid-container" class="grid grid-cols-10 gap-1 w-full h-full">
+                        <!-- 由 JavaScript 动态生成 100 个格子 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右侧：乘法公式详情、进度、规律统计 -->
+        <section class="lg:col-span-4 flex flex-col gap-4">
+            <!-- 实时进度卡片 -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">当前状态</h3>
+                <div class="flex items-baseline gap-2 mb-4">
+                    <span id="current-factor" class="text-4xl font-extrabold text-indigo-600">2</span>
+                    <span class="text-2xl font-semibold text-slate-400">的倍数</span>
+                </div>
+                
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-500 mb-1">
+                            <span>点亮进度</span>
+                            <span id="progress-text">0 / 50 个格子</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div id="progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-3 mt-2">
+                        <div class="bg-slate-50 p-2 rounded-lg">
+                            <span class="text-slate-400 block">最近亮起</span>
+                            <span id="stat-last-number" class="text-lg font-bold text-slate-700">-</span>
+                        </div>
+                        <div class="bg-slate-50 p-2 rounded-lg">
+                            <span class="text-slate-400 block">所占比例</span>
+                            <span id="stat-percent" class="text-lg font-bold text-slate-700">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 乘法口诀、等式列表 -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex-grow flex flex-col min-h-[300px]">
+                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                    乘法等式清单
+                </h3>
+                
+                <!-- 滚动等式列表 -->
+                <div id="equation-list" class="flex-grow overflow-y-auto space-y-1.5 pr-1 max-h-[380px] text-sm">
+                    <!-- 由 JavaScript 动态生成等式 -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 页脚说明 -->
+    <footer class="bg-slate-100 py-4 px-6 text-center text-xs text-slate-400 border-t border-slate-200">
+        <p>百格图可帮助建立数感：横向观察是加1，纵向观察是加10。高亮部分完美呈现了乘法的周期性斜线规律。</p>
+    </footer>
+
+    <!-- 应用逻辑脚本 -->
+    <script>
+        // 获取 DOM 元素
+        const gridContainer = document.getElementById('grid-container');
+        const factorSelect = document.getElementById('factor-select');
+        const btnStart = document.getElementById('btn-start');
+        const btnPause = document.getElementById('btn-pause');
+        const btnReset = document.getElementById('btn-reset');
+        const btnComplete = document.getElementById('btn-complete');
+        const speedRange = document.getElementById('speed-range');
+        const speedText = document.getElementById('speed-text');
+        
+        const currentFactorEl = document.getElementById('current-factor');
+        const progressTextEl = document.getElementById('progress-text');
+        const progressBarEl = document.getElementById('progress-bar');
+        const statLastNumberEl = document.getElementById('stat-last-number');
+        const statPercentEl = document.getElementById('stat-percent');
+        const equationListEl = document.getElementById('equation-list');
+
+        // 基础配置状态
+        let currentFactor = 2; // 当前乘数
+        let activeNumbers = new Set(); // 存储被激活的数字
+        let animationInterval = null; // 动画计时器
+        let animationIndex = 0; // 当前动画播放到第几个倍数
+        let isPaused = false;
+        let animationSpeed = 600; // 动画速度（毫秒）
+
+        // 主题颜色配置：针对 2 - 10 不同的乘数使用不同的亮色，提升视觉区分度
+        const colorThemes = {
+            2: { bg: 'bg-emerald-500', text: 'text-emerald-500', bgLight: 'bg-emerald-50', border: 'border-emerald-500' },
+            3: { bg: 'bg-cyan-500', text: 'text-cyan-500', bgLight: 'bg-cyan-50', border: 'border-cyan-500' },
+            4: { bg: 'bg-indigo-500', text: 'text-indigo-500', bgLight: 'bg-indigo-50', border: 'border-indigo-500' },
+            5: { bg: 'bg-purple-500', text: 'text-purple-500', bgLight: 'bg-purple-50', border: 'border-purple-500' },
+            6: { bg: 'bg-pink-500', text: 'text-pink-500', bgLight: 'bg-pink-50', border: 'border-pink-500' },
+            7: { bg: 'bg-rose-500', text: 'text-rose-500', bgLight: 'bg-rose-50', border: 'border-rose-500' },
+            8: { bg: 'bg-orange-500', text: 'text-orange-500', bgLight: 'bg-orange-50', border: 'border-orange-500' },
+            9: { bg: 'bg-amber-500', text: 'text-amber-500', bgLight: 'bg-amber-50', border: 'border-amber-500' },
+            10: { bg: 'bg-teal-500', text: 'text-teal-500', bgLight: 'bg-teal-50', border: 'border-teal-500' }
+        };
+
+        // 初始化百格图
+        function initGrid() {
+            gridContainer.innerHTML = '';
+            for (let i = 1; i <= 100; i++) {
+                const cell = document.createElement('div');
+                cell.id = `cell-${i}`;
+                cell.className = "grid-cell bg-white border border-slate-200 rounded flex items-center justify-center font-semibold text-xs sm:text-sm text-slate-400 select-none cursor-default shadow-sm";
+                cell.textContent = i;
+                gridContainer.appendChild(cell);
+            }
+        }
+
+        // 获取当前乘法表应亮起的所有数字数组（例如：2, 4, 6... 100）
+        function getTargetNumbers(factor) {
+            const list = [];
+            for (let i = factor; i <= 100; i += factor) {
+                list.push(i);
+            }
+            return list;
+        }
+
+        // 生成右侧的等式列表
+        function initEquationList() {
+            equationListEl.innerHTML = '';
+            const targetList = getTargetNumbers(currentFactor);
+            const theme = colorThemes[currentFactor];
+
+            targetList.forEach((num, index) => {
+                const multiplier = index + 1;
+                const eqDiv = document.createElement('div');
+                eqDiv.id = `eq-${num}`;
+                eqDiv.className = `flex justify-between items-center px-3 py-2 rounded-lg border border-slate-100 bg-slate-50 text-slate-500 transition-all duration-300`;
+                eqDiv.innerHTML = `
+                    <div class="font-mono">
+                        <span class="font-bold text-slate-700">${currentFactor}</span> 
+                        <span class="mx-1">×</span> 
+                        <span class="font-bold text-slate-700">${multiplier}</span>
+                    </div>
+                    <div class="font-bold font-mono text-slate-800 text-base">= ${num}</div>
+                `;
+                equationListEl.appendChild(eqDiv);
+            });
+        }
+
+        // 高亮特定等式
+        function highlightEquation(num) {
+            const theme = colorThemes[currentFactor];
+            // 取消其他所有等式的高亮
+            document.querySelectorAll('#equation-list > div').forEach(el => {
+                el.className = "flex justify-between items-center px-3 py-2 rounded-lg border border-slate-100 bg-slate-50 text-slate-500 transition-all duration-300";
+            });
+
+            const activeEq = document.getElementById(`eq-${num}`);
+            if (activeEq) {
+                activeEq.className = `flex justify-between items-center px-3 py-2 rounded-lg border ${theme.border} ${theme.bgLight} ${theme.text} font-bold scale-[1.02] shadow-sm transition-all duration-300`;
+                
+                // 【核心修改点】不再使用会导致主窗口跳动的 activeEq.scrollIntoView()
+                // 改用精确控制容器滚动条的 scrollTo，确保整个大窗口和百格图决不动摇
+                const container = equationListEl;
+                const topPos = activeEq.offsetTop - container.offsetTop;
+                container.scrollTo({
+                    top: topPos - (container.clientHeight / 2) + (activeEq.clientHeight / 2),
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // 更新状态和进度条
+        function updateStats() {
+            const totalTargets = getTargetNumbers(currentFactor).length;
+            const currentCount = activeNumbers.size;
+            
+            // 进度文字与进度条
+            progressTextEl.textContent = `${currentCount} / ${totalTargets} 个格子`;
+            const percentage = (currentCount / totalTargets) * 100;
+            progressBarEl.style.width = `${percentage}%`;
+            statPercentEl.textContent = `${Math.round(percentage)}%`;
+
+            // 最近亮起的数字
+            if (currentCount > 0) {
+                const arr = Array.from(activeNumbers).sort((a,b)=>a-b);
+                statLastNumberEl.textContent = arr[arr.length - 1];
+            } else {
+                statLastNumberEl.textContent = '-';
+            }
+        }
+
+        // 亮起单个格子
+        function lightUpCell(num, withPulse = true) {
+            const cell = document.getElementById(`cell-${num}`);
+            if (!cell) return;
+
+            const theme = colorThemes[currentFactor];
+            
+            // 移除原本未激活的样式
+            cell.classList.remove('bg-white', 'text-slate-400', 'border-slate-200');
+            
+            // 添加激活的皮肤样式
+            cell.classList.add(theme.bg, 'text-white', 'border-transparent', 'font-extrabold', 'shadow-md');
+            
+            if (withPulse) {
+                cell.classList.add('active-pulse');
+                // 动画播放完后移出脉冲类，方便以后再次触发
+                setTimeout(() => {
+                    cell.classList.remove('active-pulse');
+                }, 600);
+            }
+
+            activeNumbers.add(num);
+            updateStats();
+        }
+
+        // 熄灭格子或重置
+        function resetGridAndState() {
+            clearInterval(animationInterval);
+            animationInterval = null;
+            animationIndex = 0;
+            activeNumbers.clear();
+            isPaused = false;
+
+            // 恢复按钮状态
+            btnStart.classList.remove('hidden');
+            btnPause.classList.add('hidden');
+            btnStart.querySelector('span').textContent = '开始动画';
+
+            // 重置百格图每个格子的样式
+            for (let i = 1; i <= 100; i++) {
+                const cell = document.getElementById(`cell-${i}`);
+                if (cell) {
+                    cell.className = "grid-cell bg-white border border-slate-200 rounded flex items-center justify-center font-semibold text-xs sm:text-sm text-slate-400 select-none cursor-default shadow-sm";
+                }
+            }
+
+            // 重置进度及等式
+            updateStats();
+            document.querySelectorAll('#equation-list > div').forEach(el => {
+                el.className = "flex justify-between items-center px-3 py-2 rounded-lg border border-slate-100 bg-slate-50 text-slate-500 transition-all duration-300";
+            });
+            // 滚动回最上方
+            equationListEl.scrollTop = 0;
+        }
+
+        // 执行单步动画
+        function playStep() {
+            const targets = getTargetNumbers(currentFactor);
+            if (animationIndex < targets.length) {
+                const nextNum = targets[animationIndex];
+                lightUpCell(nextNum, true);
+                highlightEquation(nextNum);
+                animationIndex++;
+            } else {
+                // 动画结束
+                clearInterval(animationInterval);
+                animationInterval = null;
+                btnStart.classList.remove('hidden');
+                btnPause.classList.add('hidden');
+                btnStart.querySelector('span').textContent = '重新播放';
+            }
+        }
+
+        // 启动动画逻辑
+        function startAnimation() {
+            if (isPaused) {
+                // 如果是从暂停中恢复
+                isPaused = false;
+                btnStart.classList.add('hidden');
+                btnPause.classList.remove('hidden');
+                animationInterval = setInterval(playStep, animationSpeed);
+            } else {
+                // 全新开始
+                if (animationIndex >= getTargetNumbers(currentFactor).length) {
+                    resetGridAndState();
+                }
+                btnStart.classList.add('hidden');
+                btnPause.classList.remove('hidden');
+                animationInterval = setInterval(playStep, animationSpeed);
+            }
+        }
+
+        // 暂停动画
+        function pauseAnimation() {
+            clearInterval(animationInterval);
+            animationInterval = null;
+            isPaused = true;
+            btnStart.classList.remove('hidden');
+            btnPause.classList.add('hidden');
+            btnStart.querySelector('span').textContent = '继续播放';
+        }
+
+        // 直接完成展示（跳过动画）
+        function completeDirectly() {
+            resetGridAndState();
+            const targets = getTargetNumbers(currentFactor);
+            targets.forEach(num => {
+                lightUpCell(num, false);
+            });
+            // 高亮最后一个公式
+            if (targets.length > 0) {
+                highlightEquation(targets[targets.length - 1]);
+            }
+            btnStart.classList.remove('hidden');
+            btnPause.classList.add('hidden');
+            btnStart.querySelector('span').textContent = '重新播放';
+        }
+
+        // 切换不同的乘数
+        function changeFactor(newFactor) {
+            currentFactor = parseInt(newFactor, 10);
+            currentFactorEl.textContent = currentFactor;
+            
+            // 切换主题样式（进度条颜色）
+            const theme = colorThemes[currentFactor];
+            progressBarEl.className = `${theme.bg} h-full w-0 transition-all duration-300`;
+
+            resetGridAndState();
+            initEquationList();
+        }
+
+        // 事件监听器配置
+        factorSelect.addEventListener('change', (e) => {
+            changeFactor(e.target.value);
+        });
+
+        btnStart.addEventListener('click', startAnimation);
+        btnPause.addEventListener('click', pauseAnimation);
+        btnReset.addEventListener('click', resetGridAndState);
+        btnComplete.addEventListener('click', completeDirectly);
+
+        // 速度滑块调节
+        speedRange.addEventListener('input', (e) => {
+            animationSpeed = parseInt(e.target.value, 10);
+            speedText.textContent = `${(animationSpeed / 1000).toFixed(1)}s`;
+            
+            // 如果动画正在运行，则需要实时应用新速度
+            if (animationInterval && !isPaused) {
+                clearInterval(animationInterval);
+                animationInterval = setInterval(playStep, animationSpeed);
+            }
+        });
+
+        // 页面初始化加载
+        window.onload = function() {
+            initGrid();
+            changeFactor(2);
+        };
+    </script>
+</body>
+</html>
